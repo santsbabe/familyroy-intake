@@ -20,3 +20,5 @@ export function allowedOrigin(route,env={}){
  const key=route==="control_centre.school_readiness"?"FAMILYROY_CONTROL_CENTRE_ORIGIN":route==="homework_quest"?"FAMILYROY_HOMEWORK_ORIGIN":"";
  return key?String(env[key]||""):"";
 }
+
+export function canAcknowledge(record,sourceId,now=Date.now()){const state=handoffState(record,now);if(state==="expired")return{ok:false,error:"expired"};if(state==="acknowledged")return{ok:true,duplicate:true};if(String(sourceId||"")!==String(record?.source_id||""))return{ok:false,error:"source_mismatch"};if(state!=="redeemed")return{ok:false,error:"redeem_required"};return{ok:true,duplicate:false};}
