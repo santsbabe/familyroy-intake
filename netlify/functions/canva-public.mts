@@ -62,7 +62,7 @@ export default async(req:Request)=>{
     if(!r.ok)return Response.json({ok:false,error:"canva_fetch_failed",status:r.status,resolved_url:fetched.finalUrl},{status:502});
     const html=await r.text();
     const text=extractText(html);
-    return Response.json({ok:true,original_url:original,resolved_url:fetched.finalUrl,text,text_length:text.length,usable:text.length>=200,captured_at:new Date().toISOString(),capture_method:"public_html"});
+    return Response.json({ok:true,original_url:original,resolved_url:fetched.finalUrl,text,text_length:text.length,usable:false,captured_at:new Date().toISOString(),capture_method:"public_html_probe",reason:"Public Canva viewer HTML is not authoritative design content; use authenticated Canva MCP for enrichment."});
   }catch(e:any){return Response.json({ok:false,error:e?.message||"canva_resolve_failed"},{status:400});}
 };
 export const config: Config={path:"/canva-public"};
