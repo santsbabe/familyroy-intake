@@ -1,5 +1,6 @@
 import type { Config } from "@netlify/functions";
-export default async(req:Request)=>{\n if(req.method!=="GET")return new Response("Method Not Allowed",{status:405,headers:{Allow:"GET","cache-control":"no-store"}});
+export default async(req:Request)=>{
+ if(req.method!=="GET")return new Response("Method Not Allowed",{status:405,headers:{Allow:"GET","cache-control":"no-store"}});
  if(Netlify.context?.deploy?.context==="production")return new Response("Not Found",{status:404});
  const token=Netlify.env.get("FAMILYROY_INTAKE_TOKEN")||"";if(!token)return Response.json({ok:false,error:"preview_token_missing"},{status:500});
  const origin=new URL(req.url).origin,stamp=new Date().toISOString(),body={source_type:"manual",source_chat:"PNPS",source_timestamp:"browser-acceptance-"+stamp,text:"[FamilyRoy browser acceptance] PNPS: Please bring Alexander's library bag tomorrow."};
