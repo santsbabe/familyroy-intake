@@ -1,2 +1,6 @@
 [functions]
   directory = "netlify/functions"
+
+[context.deploy-preview.environment]
+  FAMILYROY_CONTROL_CENTRE_ORIGIN = "https://santsbabe.github.io"
+  FAMILYROY_HOMEWORK_ORIGIN = "https://deploy-preview-23--homework-quest-parent-console.netlify.app"
