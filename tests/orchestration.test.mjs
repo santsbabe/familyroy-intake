@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {destinationSummary,shortcutMessage,nextActions,choosePrimaryAction,destinationFragment,recoveryState,handoffStatus} from "../netlify/functions/orchestration.mjs";
+import {destinationSummary,shortcutMessage,nextActions,choosePrimaryAction,destinationFragment,recoveryState,handoffStatus,shortcutPlan} from "../netlify/functions/orchestration.mjs";
 const H={homework_quest:{capability:"x",expires_at:"2026-10-02T20:00:00Z",delivery:"scoped_handoff"},"control_centre.school_readiness":{capability:"y",expires_at:"2026-10-02T20:00:00Z",delivery:"scoped_handoff"}};
 test("multi-route response names each destination once",()=>{const routes=["homework_quest","control_centre.school_readiness","control_centre.calendar_events"];assert.equal(shortcutMessage({routes,handoffs:H}),"Saved → Homework Quest + School Readiness + Calendar");assert.deepEqual(destinationSummary(routes,H).map(x=>x.label),["Homework Quest","School Readiness","Calendar"]);});
 test("next actions contain only browser destinations with capabilities",()=>{const a=nextActions(["homework_quest","control_centre.school_readiness","control_centre.calendar_events"],H);assert.equal(a.length,2);assert.deepEqual(a.map(x=>x.label),["Open Homework Quest","Open School Readiness"]);assert.ok(a.every(x=>x.capability));});
@@ -18,3 +18,6 @@ test("duplicate pending destination remains recoverable",()=>{assert.deepEqual(r
 
 test("handoff status reports mixed browser and queued delivery",()=>{assert.deepEqual(handoffStatus(["homework_quest","control_centre.school_readiness","control_centre.calendar_events"],H),{browser_total:2,browser_ready:2,queued_total:1,all_browser_ready:true});});
 test("missing capability is visible in diagnostics",()=>{const h={homework_quest:H.homework_quest};assert.deepEqual(handoffStatus(["homework_quest","control_centre.school_readiness"],h),{browser_total:2,browser_ready:1,queued_total:0,all_browser_ready:false});});
+
+test("Shortcut plan opens only the chosen destination",()=>{const response={shortcut_message:"Saved → Homework Quest + School Readiness + Calendar",primary_action:{route:"control_centre.school_readiness",capability:"secret",expires_at:"x"}};const p=shortcutPlan(response,{intake_endpoint:"https://intake.example",homework_quest:"https://homework.example","control_centre.school_readiness":"https://santsbabe.github.io/logbook-assistant/familyroy-control-centre-qa/"});assert.match(p.open_url,/familyroy=secret/);assert.ok(p.open_url.startsWith("https://santsbabe.github.io/"));assert.ok(!p.open_url.includes("homework.example"));});
+test("Shortcut plan never opens a destination when its base is unknown",()=>{const p=shortcutPlan({shortcut_message:"Saved",primary_action:{route:"homework_quest",capability:"secret"}},{intake_endpoint:"https://intake.example"});assert.deepEqual(p,{message:"Saved",open_url:null});});
