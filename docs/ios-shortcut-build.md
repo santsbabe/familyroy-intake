@@ -49,3 +49,41 @@ Expected second identical request:
 
 ## After acceptance
 Extend accepted Share Sheet types to files/images/ZIP exports and add attachment handling. Do not use real family data until the endpoint is production-secured with a fresh production token.
+
+
+## v0.2 Share Sheet extension — device build
+Do not change the working text path. Extend it.
+
+Accepted Share Sheet types:
+- Text
+- URLs
+- Images
+- Files
+
+Branch on input type:
+1. Text/URL: keep existing JSON request unchanged.
+2. File/Image:
+   - Get Name of Shortcut Input
+   - Get Type of Shortcut Input / MIME type when available
+   - Base64 Encode Shortcut Input with line breaks OFF
+   - POST the same /intake endpoint with:
+     source_type = whatsapp_share
+     text = empty string
+     attachments = List containing one Dictionary:
+       name = file name
+       mime_type = detected content type (fallback application/octet-stream)
+       data_base64 = Base64 Encoded
+   - read shortcut_message from response
+   - show the same confirmation.
+
+WhatsApp Export Chat:
+- In WhatsApp: Export Chat → Without Media for first acceptance.
+- Share the generated ZIP directly to Send to FamilyRoy.
+- The server recognises .zip/application/zip, extracts _chat.txt for routing, and retains the original ZIP as evidence.
+- First acceptance ZIP must be synthetic/non-family evidence only.
+
+Current preview limit: 3 MiB decoded per attachment. Keep "Without Media" for WhatsApp ZIP acceptance so iOS does not create an unnecessarily large payload.
+
+UX target after functional acceptance:
+- replace blocking Show Result with a non-blocking notification if iOS exposes the action reliably on the user's version.
+- preserve the current Show Result until the replacement has been proven; do not remove the working confirmation first.
