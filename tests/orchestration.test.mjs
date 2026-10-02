@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {destinationSummary,shortcutMessage,nextActions,choosePrimaryAction,destinationFragment} from "../netlify/functions/orchestration.mjs";
+import {destinationSummary,shortcutMessage,nextActions,choosePrimaryAction,destinationFragment,recoveryState} from "../netlify/functions/orchestration.mjs";
 const H={homework_quest:{capability:"x",expires_at:"2026-10-02T20:00:00Z",delivery:"scoped_handoff"},"control_centre.school_readiness":{capability:"y",expires_at:"2026-10-02T20:00:00Z",delivery:"scoped_handoff"}};
 test("multi-route response names each destination once",()=>{const routes=["homework_quest","control_centre.school_readiness","control_centre.calendar_events"];assert.equal(shortcutMessage({routes,handoffs:H}),"Saved → Homework Quest + School Readiness + Calendar");assert.deepEqual(destinationSummary(routes,H).map(x=>x.label),["Homework Quest","School Readiness","Calendar"]);});
 test("next actions contain only browser destinations with capabilities",()=>{const a=nextActions(["homework_quest","control_centre.school_readiness","control_centre.calendar_events"],H);assert.equal(a.length,2);assert.deepEqual(a.map(x=>x.label),["Open Homework Quest","Open School Readiness"]);assert.ok(a.every(x=>x.capability));});
@@ -12,3 +12,6 @@ test("Homework is primary when it is the only browser handoff",()=>{const a=next
 test("no browser handoff means no forced app opening",()=>{assert.equal(choosePrimaryAction([]),null);});
 
 test("destination handoff uses fragment parameters rather than a full URL",()=>{const f=destinationFragment({capability:"secret-cap"}, "https://preview.example/");assert.equal(f,"familyroy=secret-cap&endpoint=https%3A%2F%2Fpreview.example");assert.ok(!f.startsWith("http"));});
+
+test("recovery state distinguishes saved, ready and review",()=>{assert.equal(recoveryState({}).state,"saved");assert.equal(recoveryState({next_actions:[{route:"homework_quest"}]}).state,"ready");assert.equal(recoveryState({status:"needs_review"}).state,"review");});
+test("duplicate pending destination remains recoverable",()=>{assert.deepEqual(recoveryState({duplicate:true,next_actions:[{route:"homework_quest"}]}),{state:"ready",message:"Already saved — destination still available"});});
