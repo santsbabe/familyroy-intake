@@ -29,3 +29,8 @@ New intake records now persist one pending outbox item per route. Destination ap
 `POST /route-outbox?route=<route>` with `{"source_id":"<sha256>","consumer":"<name>"}` acknowledges successful consumption.
 
 Consumption is idempotent: repeating an acknowledgement returns the already-consumed item instead of creating a second destination action. The same bearer credential protects the preview endpoint. Production credentials and deployment remain a separate release decision.
+
+## Destination security boundary
+The Intake bearer token is a server credential. It must not be embedded in Homework Quest browser code, the GitHub Pages Control Centre, localStorage, query strings, or committed configuration. Browser-only destinations receive routed payloads through a separate secure handoff/bridge; they do not call the master outbox directly.
+
+Duplicate intake is also a recovery operation: if a canonical source already exists but one of its deterministic outbox entries is missing, Intake recreates only the missing entry and leaves existing/consumed entries unchanged.
