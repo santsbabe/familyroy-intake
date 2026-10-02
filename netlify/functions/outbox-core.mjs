@@ -9,3 +9,5 @@ export async function ensureRouteOutbox(store,record,{repairOnly=false}={}){
  }
  return{created,existing,repairOnly};
 }
+
+export function pendingRoutesFromEnsure(result={}){return new Set([...(result.created||[]).map(x=>x.route),...(result.existing||[]).filter(x=>x.status!=="consumed").map(x=>x.route)]);}
