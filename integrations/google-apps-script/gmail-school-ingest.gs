@@ -4,9 +4,10 @@
  * Required Script Property: FAMILYROY_INTAKE_URL
  * Optional: FAMILYROY_INTAKE_TOKEN
  *
- * This script deliberately does NOT scrape Canva. It forwards the Gmail evidence
- * and every Canva URL to FamilyRoy. Canva resolution/content capture is a separate
- * source-adapter step so credentials never live in Gmail.
+ * This script forwards Gmail evidence and Canva URLs to FamilyRoy, then asks the
+ * preview/production FamilyRoy service to attempt a guarded public-share capture.
+ * Canva credentials never live in Gmail. Failed captures remain awaiting enrichment
+ * and are retried idempotently on a later run.
  */
 const FAMILYROY_QUERY = "newer_than:2d {from:communications@pnps.co.za from:aftercare@pnps.co.za \"canva.link\" \"canva.com/design\"}";
 
