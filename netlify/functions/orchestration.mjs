@@ -28,3 +28,9 @@ export function nextActions(routes=[],handoffs={}){
 export function choosePrimaryAction(actions=[]){if(!actions.length)return null;const priority=["control_centre.school_readiness","homework_quest"];return priority.map(route=>actions.find(x=>x.route===route)).find(Boolean)||actions[0];}
 
 export function destinationFragment(action,endpoint){if(!action?.capability||!endpoint)return null;const params=new URLSearchParams({familyroy:action.capability,endpoint:String(endpoint).replace(/\/$/,"")});return params.toString();}
+
+export function recoveryState({status="",duplicate=false,next_actions=[]}={}){
+ if(status==="needs_review")return{state:"review",message:"Saved safely for review"};
+ if(next_actions.length)return{state:"ready",message:duplicate?"Already saved — destination still available":"Saved — destination ready"};
+ return{state:"saved",message:duplicate?"Already saved":"Saved safely"};
+}
