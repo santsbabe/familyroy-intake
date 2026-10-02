@@ -17,6 +17,8 @@ export default async()=>{
  results.push(check("Optional + mandatory notice",e.routes.includes(ROUTES.SCHOOL_READINESS)&&e.extracted.children.includes("Alexander"),{routes:e.routes,children:e.extracted.children}));
  const f=buildRecord({source_chat:"PNPS",text:"Please complete the school fee payment form by Friday."});
  results.push(check("School fee admin excluded from readiness",!f.routes.includes(ROUTES.SCHOOL_READINESS),{routes:f.routes}));
+ const g=buildRecord({source_chat:"PNPS",text:"PNPS: Alexander homework is revise klanke. Bring library bag on Friday."});
+ results.push(check("Mixed share fan-out",g.routes.includes(ROUTES.SCHOOL_HOMEWORK)&&g.routes.includes(ROUTES.SCHOOL_READINESS)&&g.routes.includes(ROUTES.EVENTS),{routes:g.routes}));
  const tokenPresent=!!Netlify.env.get("FAMILYROY_INTAKE_TOKEN");
  results.push(check("Preview intake secret available to functions",tokenPresent));
  const ok=results.every(x=>x.pass);
