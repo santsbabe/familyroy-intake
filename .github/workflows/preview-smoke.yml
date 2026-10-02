@@ -67,14 +67,28 @@ jobs:
             sleep 10
           done
           exit 1
-      - name: Render Control Centre QA in a real headless browser
+      - name: Complete synthetic handoff through real Control Centre browser
         run: |
           set -euo pipefail
+          base="https://deploy-preview-1--familyroy-intake.netlify.app"
+          probe=$(curl --fail --silent --show-error "$base/browser-acceptance")
+          launch=$(echo "$probe" | jq -r '.launch_url')
+          source_id=$(echo "$probe" | jq -r '.source_id')
+          test -n "$launch"
+          test -n "$source_id"
           browser=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
-          "$browser" --headless=new --no-sandbox --disable-gpu --dump-dom \
-            "https://santsbabe.github.io/logbook-assistant/familyroy-control-centre-qa/" > /tmp/control-centre-dom.html
-          grep -q "FamilyRoy Control Centre" /tmp/control-centre-dom.html
-          grep -q "School Readiness" /tmp/control-centre-dom.html
+          "$browser" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=7000 --dump-dom "$launch" > /tmp/control-centre-handoff.html
+          grep -qi "library bag" /tmp/control-centre-handoff.html
+          for i in {1..12}; do
+            status=$(curl --fail --silent --show-error "$base/browser-acceptance-status?source_id=$source_id")
+            if [ "$(echo "$status" | jq -r '.consumed')" = true ]; then
+              test "$(echo "$status" | jq -r '.consumer')" = "control_centre.school_readiness"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "$status"
+          exit 1
       - name: Verify School Readiness CORS preflight
         run: |
           set -euo pipefail
