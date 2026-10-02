@@ -12,8 +12,20 @@ function visibleText(html:string){
     .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi," ")
     .replace(/<[^>]+>/g," ")
     .replace(/\s+/g," ")
-    .trim()).slice(0,500000);
+    .trim());
 }
+function embeddedStrings(html:string){
+  const out:string[]=[];const seen=new Set<string>();
+  for(const script of html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi)||[]){
+    const body=script.replace(/^<script\b[^>]*>/i,"").replace(/<\/script>$/i,"");
+    const re=/"((?:\\.|[^"\\]){4,})"/g;let m;
+    while((m=re.exec(body))&&out.join(" ").length<400000){
+      try{const value=JSON.parse('"'+m[1]+'"').replace(/\s+/g," ").trim();if(value.length>=4&&/[A-Za-z]/.test(value)&&!/^https?:\/\//.test(value)&&!seen.has(value)){seen.add(value);out.push(value);}}catch{}
+    }
+  }
+  return out.join(" ");
+}
+function extractText(html:string){return (visibleText(html)+" "+embeddedStrings(html)).replace(/\s+/g," ").trim().slice(0,500000);}
 async function resolveCanva(url:string){
   if(!allowed(url))throw new Error("invalid_canva_url");
   if(!new URL(url).hostname.endsWith("canva.link"))return url;
@@ -49,7 +61,7 @@ export default async(req:Request)=>{
     const r=fetched.response;
     if(!r.ok)return Response.json({ok:false,error:"canva_fetch_failed",status:r.status,resolved_url:fetched.finalUrl},{status:502});
     const html=await r.text();
-    const text=visibleText(html);
+    const text=extractText(html);
     return Response.json({ok:true,original_url:original,resolved_url:fetched.finalUrl,text,text_length:text.length,usable:text.length>=200,captured_at:new Date().toISOString(),capture_method:"public_html"});
   }catch(e:any){return Response.json({ok:false,error:e?.message||"canva_resolve_failed"},{status:400});}
 };
