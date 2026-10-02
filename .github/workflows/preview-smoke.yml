@@ -120,6 +120,11 @@ jobs:
             "https://deploy-preview-1--familyroy-intake.netlify.app/handoff"
           grep -qi '^HTTP/.* 204' "$h"
           grep -qi '^access-control-allow-origin: https://deploy-preview-23--homework-quest-parent-console.netlify.app' "$h"
+      - name: Reject unsupported handoff method without capability processing
+        run: |
+          code=$(curl --silent --show-error -o /dev/null -w "%{http_code}" -X DELETE \
+            "https://deploy-preview-1--familyroy-intake.netlify.app/handoff")
+          test "$code" = 405
       - name: Reject unconfigured CORS origin
         run: |
           code=$(curl --silent --show-error -o /dev/null -w "%{http_code}" -X OPTIONS \
