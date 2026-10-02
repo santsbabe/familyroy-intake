@@ -67,6 +67,14 @@ jobs:
             sleep 10
           done
           exit 1
+      - name: Render Control Centre QA in a real headless browser
+        run: |
+          set -euo pipefail
+          browser=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          "$browser" --headless=new --no-sandbox --disable-gpu --dump-dom \
+            "https://santsbabe.github.io/logbook-assistant/familyroy-control-centre-qa/" > /tmp/control-centre-dom.html
+          grep -q "FamilyRoy Control Centre" /tmp/control-centre-dom.html
+          grep -q "School Readiness" /tmp/control-centre-dom.html
       - name: Verify School Readiness CORS preflight
         run: |
           set -euo pipefail
