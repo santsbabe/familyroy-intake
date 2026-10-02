@@ -46,3 +46,10 @@ Safety limits:
 - raw base64 is never written into the source JSON record
 
 For iOS, encode the deliberately shared file with Base64 before building the JSON attachment object. Text-only shares continue using the existing contract unchanged.
+
+## Destination capabilities (preview v0.3)
+A successful Intake response may also contain `handoffs` for browser destinations such as Homework Quest and School Readiness. Each handoff contains a short-lived opaque capability and expiry. This is not the Intake bearer token and cannot access the general outbox.
+
+The Shortcut may use a returned capability to open the intended destination in one tap. Put the capability in the URL **fragment** (after `#`), never in query parameters. Fragments are not sent in the HTTP request to the static host. The destination removes the fragment from browser history before redemption and sends the capability to Intake in the `Authorization: Handoff …` header.
+
+Do not log, screenshot, persist or reuse a capability. If it expires before redemption, re-sharing the same source is safe: Intake dedupes the canonical source and can issue a fresh capability for any still-pending route.
