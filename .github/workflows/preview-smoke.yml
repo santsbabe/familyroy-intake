@@ -1,0 +1,59 @@
+name: FamilyRoy preview smoke
+on:
+  push:
+    branches: ["preview/**"]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deploy preview health
+        run: |
+          set -euo pipefail
+          base="https://deploy-preview-1--familyroy-intake.netlify.app"
+          for i in {1..18}; do
+            if curl --fail --silent --show-error "$base/health" | grep -q '"ok":true'; then break; fi
+            if [ "$i" = 18 ]; then echo "Preview did not become healthy"; exit 1; fi
+            sleep 10
+          done
+      - name: Run public preview acceptance page
+        run: |
+          set -euo pipefail
+          base="https://deploy-preview-1--familyroy-intake.netlify.app"
+          for i in {1..18}; do
+            code=$(curl --silent --show-error -o /tmp/acceptance.html -w "%{http_code}" "$base/acceptance-results")
+            if [ "$code" = 200 ] && grep -q "ROUTER TESTS PASSED" /tmp/acceptance.html; then exit 0; fi
+            sleep 10
+          done
+          cat /tmp/acceptance.html
+          exit 1
+      - name: Verify School Readiness CORS preflight
+        run: |
+          set -euo pipefail
+          h=$(mktemp)
+          curl --silent --show-error -D "$h" -o /dev/null -X OPTIONS \
+            -H "Origin: https://santsbabe.github.io" \
+            -H "Access-Control-Request-Method: GET" \
+            -H "Access-Control-Request-Headers: authorization" \
+            "https://deploy-preview-1--familyroy-intake.netlify.app/handoff"
+          grep -qi '^HTTP/.* 204' "$h"
+          grep -qi '^access-control-allow-origin: https://santsbabe.github.io' "$h"
+          grep -qi '^access-control-allow-headers: .*authorization' "$h"
+      - name: Verify Homework Quest CORS preflight
+        run: |
+          set -euo pipefail
+          h=$(mktemp)
+          curl --silent --show-error -D "$h" -o /dev/null -X OPTIONS \
+            -H "Origin: https://deploy-preview-23--homework-quest-parent-console.netlify.app" \
+            -H "Access-Control-Request-Method: GET" \
+            -H "Access-Control-Request-Headers: authorization" \
+            "https://deploy-preview-1--familyroy-intake.netlify.app/handoff"
+          grep -qi '^HTTP/.* 204' "$h"
+          grep -qi '^access-control-allow-origin: https://deploy-preview-23--homework-quest-parent-console.netlify.app' "$h"
+      - name: Reject unconfigured CORS origin
+        run: |
+          code=$(curl --silent --show-error -o /dev/null -w "%{http_code}" -X OPTIONS \
+            -H "Origin: https://evil.example" \
+            -H "Access-Control-Request-Method: GET" \
+            -H "Access-Control-Request-Headers: authorization" \
+            "https://deploy-preview-1--familyroy-intake.netlify.app/handoff")
+          test "$code" = 403
