@@ -6,7 +6,7 @@ export function normalisePayload(input={}){
   const text=String(input.text??"").trim();
   const attachments=Array.isArray(input.attachments)?input.attachments:[];
   const rawCaptures=[...(Array.isArray(input.canva_captures)?input.canva_captures:[]),...(input.canva&&typeof input.canva==="object"?[input.canva]:[])];
-  const canva_captures=rawCaptures.map(x=>({original_url:x.original_url||null,resolved_url:x.resolved_url||null,design_id:x.design_id||null,title:x.title||null,captured_at:x.captured_at||null,content_text:String(x.content_text??"").trim(),evidence_ref:x.evidence_ref||null})).filter(x=>x.original_url||x.resolved_url||x.content_text);
+  const canva_captures=rawCaptures.map(x=>({original_url:x.original_url||null,resolved_url:x.resolved_url||null,design_id:x.design_id||null,title:x.title||null,captured_at:x.captured_at||null,content_text:String(x.content_text??"").trim(),evidence_ref:x.evidence_ref||null,capture_method:x.capture_method||null})).filter(x=>x.original_url||x.resolved_url||x.content_text);
   const source_canva_urls=[...new Set([...(Array.isArray(input.canva_urls)?input.canva_urls:[]),...extractCanvaUrls(text)].filter(isCanvaUrl))];
   const canva_urls=[...new Set([...source_canva_urls,...canva_captures.flatMap(x=>[x.original_url,x.resolved_url].filter(Boolean))].filter(isCanvaUrl))];
   const classification_text=[text,...canva_captures.map(x=>x.content_text).filter(Boolean)].filter(Boolean).join("\n\n");
