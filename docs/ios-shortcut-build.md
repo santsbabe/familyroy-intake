@@ -105,3 +105,13 @@ This section is an implementation contract, not a request for Santie to edit the
 If the destination page does not open, the Intake record is already safe. Do not ask Santie to recreate or manually copy the school notice. Re-run Send to FamilyRoy on the same evidence: dedupe returns the same `source_id` and refreshes a capability only for destinations still pending.
 
 If a share has more than one browser destination, open only `primary_action`. The secondary action remains available in `next_actions`; do not open multiple tabs automatically. If no browser action is available, show the confirmation and stop.
+
+## v0.4 minimal device extension
+The server now returns `primary_action.launch_url` when there is one immediate browser destination. The URL is already complete and carries the short-lived capability only in its fragment.
+
+This reduces the eventual iPhone change to the smallest practical extension of the existing working Shortcut:
+1. Read `primary_action.launch_url` from the existing Intake response.
+2. If it has a value, Open URL.
+3. If it is empty, finish normally.
+
+The Shortcut does **not** need to know route names, destination base URLs, the Intake endpoint for handoff construction, or any handoff token logic. Do not rebuild the existing request/authentication path.
