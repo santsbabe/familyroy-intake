@@ -26,6 +26,22 @@ jobs:
           done
           cat /tmp/acceptance.html
           exit 1
+      - name: Run authenticated live Intake acceptance
+        run: |
+          set -euo pipefail
+          body=$(curl --fail --silent --show-error "https://deploy-preview-1--familyroy-intake.netlify.app/acceptance")
+          echo "$body" > /tmp/live-acceptance.json
+          python - <<'PY'
+          import json
+          x=json.load(open("/tmp/live-acceptance.json"))
+          assert x.get("ok") is True, x
+          assert x.get("production_untouched") is True, x
+          names={r["name"]:r for r in x.get("results",[])}
+          assert names["Missing token rejected"]["pass"]
+          assert names["Wrong token rejected"]["pass"]
+          assert names["Duplicate ingestion"]["pass"]
+          assert names["PNPS multi-route"]["pass"]
+          PY
       - name: Verify School Readiness CORS preflight
         run: |
           set -euo pipefail
