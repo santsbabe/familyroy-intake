@@ -9,17 +9,8 @@
  * source-adapter step so credentials never live in Gmail.
  */
 const FAMILYROY_PROCESSED_LABEL = "FamilyRoy/Processed";
-const FAMILYROY_QUERY = [
-  "-label:" + FAMILYROY_PROCESSED_LABEL,
-  "newer_than:30d",
-  "(",
-  "from:communications@pnps.co.za",
-  "OR from:aftercare@pnps.co.za",
-  "OR from:redroots@pnps.co.za",
-  "OR \"canva.link\"",
-  "OR \"canva.com/design\"",
-  ")"
-].join(" ");
+const FAMILYROY_QUERY = "-label:" + FAMILYROY_PROCESSED_LABEL +
+  " newer_than:30d {from:communications@pnps.co.za from:aftercare@pnps.co.za \"canva.link\" \"canva.com/design\"}";
 
 function ingestSchoolMail() {
   const props = PropertiesService.getScriptProperties();
@@ -75,7 +66,7 @@ function ingestSchoolMail() {
 }
 
 function extractCanvaUrls_(text) {
-  const matches = String(text || "").match(/https?:\\/\\/(?:www\\.)?(?:canva\\.link|canva\\.com)\\/[^\\s<>"')\\]]+/gi) || [];
+  const matches = String(text || "").match(/https?:\/\/(?:www\.)?(?:canva\.link|canva\.com)\/[^\s<>"')\]]+/gi) || [];
   return [...new Set(matches.map(u => u.replace(/&amp;/g, "&").replace(/[.,;:!?]+$/, "")))];
 }
 
