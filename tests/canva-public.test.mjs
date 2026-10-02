@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 function decode(s){return s.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x27;/g,"'").replace(/&nbsp;/g," ");}
 function visibleText(html){return decode(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi," ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi," ").replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi," ").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim());}
 
-test("public Canva share exposes meaningful PNPS newsletter text", {skip: process.env.CONTEXT !== "deploy-preview", timeout: 15000}, async()=>{
+test("public Canva share resolves and loads, while content extraction is handled by authenticated MCP", {skip: process.env.CONTEXT !== "deploy-preview", timeout: 15000}, async()=>{
   const short="https://canva.link/3nwbztf04kapaai";
   const first=await fetch(short,{redirect:"manual",headers:{"user-agent":"Mozilla/5.0 FamilyRoy-QA/1.0"}});
   const location=first.headers.get("location");
