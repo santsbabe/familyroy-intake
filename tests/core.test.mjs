@@ -40,3 +40,5 @@ test("bare gala date is an event, not a packing obligation",()=>{const r=buildRe
 
 test("must wear uniform remains readiness",()=>{const r=buildRecord({source_chat:"PNPS",text:"Harrison must wear sports kit on Friday."});assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));});
 test("required consent form remains readiness without learning leakage",()=>{const r=buildRecord({source_chat:"PNPS",text:"Consent form required by Friday."});assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));});
+
+test("domain routes keep deterministic source id projections",()=>{const samples=[{text:"Checkers special price",route:ROUTES.SHOPPING},{text:"Vet appointment for dog",route:ROUTES.PETS},{text:"Electricity meter reading 12345 kWh",route:ROUTES.ELECTRICITY},{text:"Passport appointment at Home Affairs",route:ROUTES.ADMIN}];for(const s of samples){const r=buildRecord({source_type:"manual",text:s.text});assert.ok(r.routes.includes(s.route),s.route);assert.equal(r.route_payloads[s.route].source_id,r.source_id);assert.equal(r.route_payloads[s.route].mode,"domain_intake");}});
