@@ -35,7 +35,7 @@ export function assessCanvaIntegrity(payload){
   const expected=payload.source_canva_urls||[];
   const captured=new Set(captures.filter(x=>x.content_text).flatMap(x=>[x.original_url,x.resolved_url].filter(Boolean)));
   const missing=expected.filter(u=>!captured.has(u));
-  if(missing.length){const failed=new Set((payload.canva_failures||[]).map(x=>x.url));if(missing.every(u=>failed.has(u)))return{state:"capture_failed",age_hours:null};return{state:"partial_capture",age_hours:null};
+  if(missing.length){const failed=new Set((payload.canva_failures||[]).map(x=>x.url));if(missing.every(u=>failed.has(u)))return{state:"capture_failed",age_hours:null};return{state:"partial_capture",age_hours:null};}
   const source=Date.parse(payload.source_timestamp||"");
   const textCaptures=captures.filter(x=>x.content_text);
   const ages=textCaptures.map(x=>Date.parse(x.captured_at||"")).filter(Number.isFinite).map(t=>Math.max(0,(t-source)/3600000));
