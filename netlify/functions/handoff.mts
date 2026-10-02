@@ -5,7 +5,7 @@ import { ROUTES } from "./core.mjs";
 import { newCapability,handoffKey,createHandoffRecord,handoffState,validCapability,allowedOrigin,canAcknowledge,preflightOriginAllowed } from "./handoff-core.mjs";
 
 const ALLOWED=new Set([ROUTES.SCHOOL_HOMEWORK,ROUTES.SCHOOL_READINESS]);
-function storeForEnvironment(){return Netlify.context?.deploy?.context==="production"?getStore("familyroy-intake",{consistency:"strong"}):getDeployStore("familyroy-intake");}
+function storeForEnvironment(){return Netlify.context?.deploy?.context==="production"?getStore("familyroy-intake",{consistency:"strong"}):getDeployStore({name:"familyroy-intake",consistency:"strong"});}
 function masterAuthorised(req:Request){const expected=Netlify.env.get("FAMILYROY_INTAKE_TOKEN")||"";const supplied=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");if(!expected||!supplied)return false;const a=Buffer.from(expected),b=Buffer.from(supplied);return a.length===b.length&&timingSafeEqual(a,b);}
 function routeKey(route:string){return route.replace(/[^a-z0-9._-]/gi,"_");}
 function cors(route:string,req:Request){const origin=req.headers.get("origin")||"",configured=allowedOrigin(route,{FAMILYROY_CONTROL_CENTRE_ORIGIN:Netlify.env.get("FAMILYROY_CONTROL_CENTRE_ORIGIN")||"",FAMILYROY_HOMEWORK_ORIGIN:Netlify.env.get("FAMILYROY_HOMEWORK_ORIGIN")||""});return configured&&origin===configured?{"access-control-allow-origin":configured,"vary":"Origin","cache-control":"no-store"}:{"cache-control":"no-store"};}
