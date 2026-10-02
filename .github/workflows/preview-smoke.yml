@@ -41,6 +41,7 @@ jobs:
           assert names["Wrong token rejected"]["pass"]
           assert names["Duplicate ingestion"]["pass"]
           assert names["PNPS multi-route"]["pass"]
+          assert names["Scoped handoff redeem → ack → partial duplicate recovery"]["pass"]
           PY
       - name: Verify School Readiness CORS preflight
         run: |
