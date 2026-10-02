@@ -4,7 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 import { ROUTES } from "./core.mjs";
 
 const ALLOWED=new Set(Object.values(ROUTES));
-function storeForEnvironment(){return Netlify.context?.deploy?.context==="production"?getStore("familyroy-intake",{consistency:"strong"}):getDeployStore("familyroy-intake");}
+function storeForEnvironment(){return Netlify.context?.deploy?.context==="production"?getStore("familyroy-intake",{consistency:"strong"}):getDeployStore({name:"familyroy-intake",consistency:"strong"});}
 function authorised(req:Request){const expected=Netlify.env.get("FAMILYROY_INTAKE_TOKEN")||"";const supplied=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");if(!expected||!supplied)return false;const a=Buffer.from(expected),b=Buffer.from(supplied);return a.length===b.length&&timingSafeEqual(a,b);}
 function routeKey(route:string){return route.replace(/[^a-z0-9._-]/gi,"_");}
 export default async(req:Request)=>{
