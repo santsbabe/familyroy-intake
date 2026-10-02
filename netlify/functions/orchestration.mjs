@@ -1,4 +1,4 @@
-const DESTINATIONS={
+export const DESTINATIONS={
  "homework_quest":{label:"Homework Quest",kind:"browser"},
  "control_centre.school_readiness":{label:"School Readiness",kind:"browser"},
  "control_centre.calendar_events":{label:"Calendar",kind:"queued"},
@@ -34,3 +34,5 @@ export function recoveryState({status="",duplicate=false,next_actions=[]}={}){
  if(next_actions.length)return{state:"ready",message:duplicate?"Already saved — destination still available":"Saved — destination ready"};
  return{state:"saved",message:duplicate?"Already saved":"Saved safely"};
 }
+
+export function handoffStatus(routes=[],handoffs={}){const summary=destinationSummary(routes,handoffs),browser=summary.filter(x=>DESTINATIONS[x.route]?.kind==="browser");return{browser_total:browser.length,browser_ready:browser.filter(x=>x.available).length,queued_total:summary.filter(x=>!x.available).length,all_browser_ready:browser.every(x=>x.available)};}
