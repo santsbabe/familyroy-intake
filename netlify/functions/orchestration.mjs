@@ -44,3 +44,5 @@ export function shortcutPlan(response={},destinations={}){
  const fragment=destinationFragment(action,destinations.intake_endpoint);if(!fragment)return{message:response.shortcut_message||"Saved to FamilyRoy",open_url:null};
  return{message:response.shortcut_message||"Saved to FamilyRoy",open_url:String(base).replace(/#.*$/,"")+"#"+fragment};
 }
+
+export function capabilityExposure(response={}){const caps=Object.values(response.handoffs||{}).map(x=>x?.capability).filter(Boolean);const serial=JSON.stringify({message:response.shortcut_message,destinations:response.destinations,recovery:response.recovery});return{capability_count:caps.length,leaked_in_safe_fields:caps.some(c=>serial.includes(c))};}
