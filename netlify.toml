@@ -1,2 +1,5 @@
+[build]
+  command = "npm test"
+
 [functions]
   directory = "netlify/functions"
