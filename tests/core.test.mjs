@@ -26,3 +26,8 @@ test("learning verb with library book is Homework only, not physical readiness",
 test("optional item does not suppress a separate strong obligation",()=>{const r=classify(normalisePayload({text:"PNPS: Parents may buy raffle tickets. Please return Alexander's consent form on Friday."}));assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));});
 
 test("informational paragraph does not suppress a separate concrete obligation",()=>{const r=buildRecord({source_chat:"PNPS",text:"Newsletter: the library will be closed next week. Please return Harrison's library book on Friday."});assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));assert.ok(r.routes.includes(ROUTES.EVENTS));});
+
+test("school payment form stays out of readiness",()=>{const r=buildRecord({source_chat:"PNPS",text:"Please complete the school fee payment form by Friday."});assert.ok(!r.routes.includes(ROUTES.SCHOOL_READINESS));});
+test("optional and mandatory clauses in one sentence are separated",()=>{const r=buildRecord({source_chat:"PNPS",text:"Parents may buy raffle tickets, but please return Alexander's consent form on Friday."});assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));});
+test("bring a concrete rand amount is readiness",()=>{const r=buildRecord({source_chat:"PNPS",text:"Please bring R20 on Friday."});assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));});
+test("pure newsletter remains non-readiness",()=>{const r=buildRecord({source_chat:"PNPS",text:"Newsletter: sports day is on Friday."});assert.ok(!r.routes.includes(ROUTES.SCHOOL_READINESS));});
