@@ -89,6 +89,14 @@ jobs:
           done
           echo "$status"
           exit 1
+      - name: Verify preview-only acceptance probes are not exposed by production
+        run: |
+          set -euo pipefail
+          prod="https://familyroy-intake.netlify.app"
+          for path in browser-acceptance browser-acceptance-status; do
+            code=$(curl --silent --show-error -o /dev/null -w "%{http_code}" "$prod/$path")
+            test "$code" = 404
+          done
       - name: Verify School Readiness CORS preflight
         run: |
           set -euo pipefail
