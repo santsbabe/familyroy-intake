@@ -7,7 +7,8 @@ export function normalisePayload(input={}){
   const attachments=Array.isArray(input.attachments)?input.attachments:[];
   const rawCaptures=[...(Array.isArray(input.canva_captures)?input.canva_captures:[]),...(input.canva&&typeof input.canva==="object"?[input.canva]:[])];
   const canva_captures=rawCaptures.map(x=>({original_url:x.original_url||null,resolved_url:x.resolved_url||null,design_id:x.design_id||null,title:x.title||null,captured_at:x.captured_at||null,content_text:String(x.content_text??"").trim(),evidence_ref:x.evidence_ref||null})).filter(x=>x.original_url||x.resolved_url||x.content_text);
-  const source_canva_urls=[...new Set([...(Array.isArray(input.canva_urls)?input.canva_urls:[]),...extractCanvaUrls(text)].filter(isCanvaUrl))];\n  const canva_urls=[...new Set([...source_canva_urls,...canva_captures.flatMap(x=>[x.original_url,x.resolved_url].filter(Boolean))].filter(isCanvaUrl))];
+  const source_canva_urls=[...new Set([...(Array.isArray(input.canva_urls)?input.canva_urls:[]),...extractCanvaUrls(text)].filter(isCanvaUrl))];
+  const canva_urls=[...new Set([...source_canva_urls,...canva_captures.flatMap(x=>[x.original_url,x.resolved_url].filter(Boolean))].filter(isCanvaUrl))];
   const classification_text=[text,...canva_captures.map(x=>x.content_text).filter(Boolean)].filter(Boolean).join("\n\n");
   return{source_type:input.source_type||"whatsapp_share",source_chat:input.source_chat||null,sender:input.sender||null,source_timestamp:input.source_timestamp||null,text,classification_text,attachments,canva:canva_captures[0]||null,canva_captures,source_canva_urls,canva_urls,content_types:[...new Set([...(text?["text"]:[]),...attachments.map(a=>a?.mime_type||a?.type||"file"),...(canva_urls.length?["canva_link"]:[]),...(canva_captures.some(x=>x.content_text)?["canva_text"]:[])])],raw_evidence_ref:input.raw_evidence_ref||null,client_context:input.client_context||null};
 }
@@ -27,9 +28,13 @@ export function assessCanvaIntegrity(payload){
   if(!payload.canva_urls?.length)return{state:"not_applicable",age_hours:null};
   const captures=payload.canva_captures||[];
   if(!captures.some(x=>x.content_text))return{state:"awaiting_capture",age_hours:null};
+  const expected=payload.source_canva_urls||[];
+  const captured=new Set(captures.filter(x=>x.content_text).flatMap(x=>[x.original_url,x.resolved_url].filter(Boolean)));
+  if(expected.some(u=>!captured.has(u)))return{state:"partial_capture",age_hours:null};
   const source=Date.parse(payload.source_timestamp||"");
-  const ages=captures.filter(x=>x.content_text).map(x=>Date.parse(x.captured_at||"")).filter(Number.isFinite).map(t=>Math.max(0,(t-source)/3600000));
-  if(!Number.isFinite(source)||ages.length!==captures.filter(x=>x.content_text).length)return{state:payload.source_type==="gmail"?"timestamp_unverified":"capture_time_unchecked",age_hours:null};
+  const textCaptures=captures.filter(x=>x.content_text);
+  const ages=textCaptures.map(x=>Date.parse(x.captured_at||"")).filter(Number.isFinite).map(t=>Math.max(0,(t-source)/3600000));
+  if(!Number.isFinite(source)||ages.length!==textCaptures.length)return{state:payload.source_type==="gmail"?"timestamp_unverified":"capture_time_unchecked",age_hours:null};
   const maxAge=Math.max(...ages);
   return{state:maxAge<=24?"fresh_capture":"late_capture",age_hours:Math.round(maxAge*10)/10};
 }
