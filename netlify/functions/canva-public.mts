@@ -15,12 +15,12 @@ function visibleText(html:string){
     .trim());
 }
 function embeddedStrings(html:string){
-  const out:string[]=[];const seen=new Set<string>();
+  const out:string[]=[];const seen=new Set<string>();let chars=0;
   for(const script of html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi)||[]){
     const body=script.replace(/^<script\b[^>]*>/i,"").replace(/<\/script>$/i,"");
     const re=/"((?:\\.|[^"\\]){4,})"/g;let m;
-    while((m=re.exec(body))&&out.join(" ").length<400000){
-      try{const value=JSON.parse('"'+m[1]+'"').replace(/\s+/g," ").trim();if(value.length>=4&&/[A-Za-z]/.test(value)&&!/^https?:\/\//.test(value)&&!seen.has(value)){seen.add(value);out.push(value);}}catch{}
+    while((m=re.exec(body))&&chars<400000){
+      try{const value=JSON.parse('"'+m[1]+'"').replace(/\s+/g," ").trim();if(value.length>=4&&/[A-Za-z]/.test(value)&&!/^https?:\/\//.test(value)&&!seen.has(value)){seen.add(value);out.push(value);chars+=value.length+1;}}catch{}
     }
   }
   return out.join(" ");
