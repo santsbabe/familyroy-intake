@@ -24,3 +24,5 @@ export function shortcutMessage({duplicate=false,status="",routes=[],handoffs={}
 export function nextActions(routes=[],handoffs={}){
  return destinationSummary(routes,handoffs).filter(x=>x.available).map(x=>({route:x.route,label:`Open ${x.label}`,capability:handoffs[x.route].capability,expires_at:handoffs[x.route].expires_at}));
 }
+
+export function choosePrimaryAction(actions=[]){if(!actions.length)return null;const priority=["control_centre.school_readiness","homework_quest"];return priority.map(route=>actions.find(x=>x.route===route)).find(Boolean)||actions[0];}
