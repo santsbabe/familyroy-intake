@@ -6,7 +6,8 @@ export function normalisePayload(input={}){
   const text=String(input.text??"").trim();
   const attachments=Array.isArray(input.attachments)?input.attachments:[];
   const rawCaptures=[...(Array.isArray(input.canva_captures)?input.canva_captures:[]),...(input.canva&&typeof input.canva==="object"?[input.canva]:[])];
-  const canva_captures=rawCaptures.map(x=>({original_url:x.original_url||null,resolved_url:x.resolved_url||null,design_id:x.design_id||null,title:x.title||null,captured_at:x.captured_at||null,content_text:String(x.content_text??"").trim(),evidence_ref:x.evidence_ref||null,capture_method:x.capture_method||null})).filter(x=>x.original_url||x.resolved_url||x.content_text);\n  const canva_failures=(Array.isArray(input.canva_failures)?input.canva_failures:[]).map(x=>({url:x.url||null,failed_at:x.failed_at||null,reason:x.reason||"capture_failed"})).filter(x=>isCanvaUrl(x.url));
+  const canva_captures=rawCaptures.map(x=>({original_url:x.original_url||null,resolved_url:x.resolved_url||null,design_id:x.design_id||null,title:x.title||null,captured_at:x.captured_at||null,content_text:String(x.content_text??"").trim(),evidence_ref:x.evidence_ref||null,capture_method:x.capture_method||null})).filter(x=>x.original_url||x.resolved_url||x.content_text);
+  const canva_failures=(Array.isArray(input.canva_failures)?input.canva_failures:[]).map(x=>({url:x.url||null,failed_at:x.failed_at||null,reason:x.reason||"capture_failed"})).filter(x=>isCanvaUrl(x.url));
   const source_canva_urls=[...new Set([...(Array.isArray(input.canva_urls)?input.canva_urls:[]),...extractCanvaUrls(text)].filter(isCanvaUrl))];
   const canva_urls=[...new Set([...source_canva_urls,...canva_captures.flatMap(x=>[x.original_url,x.resolved_url].filter(Boolean))].filter(isCanvaUrl))];
   const classification_text=[text,...canva_captures.map(x=>x.content_text).filter(Boolean)].filter(Boolean).join("\n\n");
@@ -18,9 +19,12 @@ export function mergeRecord(existing,incoming){
   const byKey=new Map();
   for(const x of [...(existing.canva_captures||[]),...(incoming.canva_captures||[])]){const key=x.resolved_url||x.original_url||x.evidence_ref||JSON.stringify(x);const prev=byKey.get(key);if(!prev||(!prev.content_text&&x.content_text))byKey.set(key,x);}
   const captures=[...byKey.values()];
-  const incomingFailures=incoming.canva_failures||[];\n  const failureChanged=incomingFailures.some(x=>!(existing.canva_failures||[]).some(y=>y.url===x.url&&y.reason===x.reason));\n  const changed=JSON.stringify(captures)!==JSON.stringify(existing.canva_captures||[])||failureChanged;
+  const incomingFailures=incoming.canva_failures||[];
+  const failureChanged=incomingFailures.some(x=>!(existing.canva_failures||[]).some(y=>y.url===x.url&&y.reason===x.reason));
+  const changed=JSON.stringify(captures)!==JSON.stringify(existing.canva_captures||[])||failureChanged;
   if(!changed)return{record:existing,changed:false};
-  const failures=[...(existing.canva_failures||[]),...(incoming.canva_failures||[])].filter((x,i,a)=>a.findIndex(y=>y.url===x.url&&y.reason===x.reason)===i);\n  const mergedInput={...incoming,canva:null,canva_captures:captures,canva_failures:failures};
+  const failures=[...(existing.canva_failures||[]),...(incoming.canva_failures||[])].filter((x,i,a)=>a.findIndex(y=>y.url===x.url&&y.reason===x.reason)===i);
+  const mergedInput={...incoming,canva:null,canva_captures:captures,canva_failures:failures};
   const rebuilt=buildRecord(mergedInput,new Date(existing.received_at));
   return{record:{...rebuilt,source_id:existing.source_id,received_at:existing.received_at,updated_at:new Date().toISOString()},changed:true};
 }
