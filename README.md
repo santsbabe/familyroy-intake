@@ -20,3 +20,12 @@ A single deliberately shared school item may route to more than one destination.
 - `review_queue`: ambiguous evidence is preserved for human review rather than guessed.
 
 Routing is classification, not silent execution. Destination adapters must remain idempotent using `source_id` / the supplied dedupe key.
+
+
+## Destination delivery (preview)
+New intake records now persist one pending outbox item per route. Destination apps can consume routed evidence without reclassifying the original share.
+
+`GET /route-outbox?route=<route>` returns pending items for an authorised destination.
+`POST /route-outbox?route=<route>` with `{"source_id":"<sha256>","consumer":"<name>"}` acknowledges successful consumption.
+
+Consumption is idempotent: repeating an acknowledgement returns the already-consumed item instead of creating a second destination action. The same bearer credential protects the preview endpoint. Production credentials and deployment remain a separate release decision.
