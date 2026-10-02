@@ -34,3 +34,6 @@ test("pure newsletter remains non-readiness",()=>{const r=buildRecord({source_ch
 
 test("route projections preserve source metadata and evidence hashes",()=>{const r=buildRecord({source_type:"whatsapp_share",source_chat:"PNPS Parents",sender:"Teacher",source_timestamp:"2026-10-02T08:00:00+02:00",text:"Harrison homework: read page 7.",attachments:[{name:"notice.jpg",mime_type:"image/jpeg",size:42,sha256:"abc"}]});const p=r.route_payloads[ROUTES.SCHOOL_HOMEWORK];assert.equal(p.source_id,r.source_id);assert.equal(p.sender,"Teacher");assert.equal(p.source_timestamp,"2026-10-02T08:00:00+02:00");assert.equal(p.evidence[0].sha256,"abc");});
 test("ambiguous PNPS text preserves school and source id in review",()=>{const r=buildRecord({source_chat:"PNPS",text:"This may be useful later."});assert.deepEqual(r.routes,[ROUTES.REVIEW]);assert.equal(r.extracted.school,"PNPS");assert.equal(r.route_payloads[ROUTES.REVIEW].source_id,r.source_id);});
+
+test("dated civvies implies a preparation obligation",()=>{const r=buildRecord({source_chat:"PNPS",text:"Civvies on Friday"});assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));});
+test("bare gala date is an event, not a packing obligation",()=>{const r=buildRecord({source_chat:"PNPS",text:"Gala on Friday"});assert.ok(r.routes.includes(ROUTES.EVENTS));assert.ok(!r.routes.includes(ROUTES.SCHOOL_READINESS));});
