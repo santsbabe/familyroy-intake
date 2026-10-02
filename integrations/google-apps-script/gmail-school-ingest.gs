@@ -8,21 +8,15 @@
  * and every Canva URL to FamilyRoy. Canva resolution/content capture is a separate
  * source-adapter step so credentials never live in Gmail.
  */
-const FAMILYROY_PROCESSED_LABEL = "FamilyRoy/Processed";
-const FAMILYROY_QUERY = "-label:" + FAMILYROY_PROCESSED_LABEL +
-  " newer_than:30d {from:communications@pnps.co.za from:aftercare@pnps.co.za \"canva.link\" \"canva.com/design\"}";
+const FAMILYROY_QUERY = "newer_than:2d {from:communications@pnps.co.za from:aftercare@pnps.co.za \"canva.link\" \"canva.com/design\"}";
 
 function ingestSchoolMail() {
   const props = PropertiesService.getScriptProperties();
   const intakeUrl = props.getProperty("FAMILYROY_INTAKE_URL");
   if (!intakeUrl) throw new Error("Missing FAMILYROY_INTAKE_URL Script Property.");
   const token = props.getProperty("FAMILYROY_INTAKE_TOKEN");
-  const label = GmailApp.getUserLabelByName(FAMILYROY_PROCESSED_LABEL) ||
-    GmailApp.createLabel(FAMILYROY_PROCESSED_LABEL);
-
   const threads = GmailApp.search(FAMILYROY_QUERY, 0, 50);
   for (const thread of threads) {
-    let complete = true;
     for (const message of thread.getMessages()) {
       if (message.isInTrash()) continue;
       const html = message.getBody();
@@ -53,15 +47,12 @@ function ingestSchoolMail() {
           headers: token ? { Authorization: "Bearer " + token } : {}
         });
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
-          complete = false;
           console.error("FamilyRoy intake failed", message.getId(), response.getResponseCode(), response.getContentText());
         }
       } catch (err) {
-        complete = false;
         console.error("FamilyRoy intake exception", message.getId(), err);
       }
     }
-    if (complete) thread.addLabel(label);
   }
 }
 
