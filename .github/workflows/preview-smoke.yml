@@ -59,10 +59,14 @@ jobs:
       - name: Verify live Control Centre QA receiver
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error "https://santsbabe.github.io/logbook-assistant/familyroy-control-centre-qa/" -o /tmp/control-centre.html
-          grep -q "handleFamilyRoyDeepLink" /tmp/control-centre.html
-          grep -q "consumeFamilyRoyReadinessHandoff" /tmp/control-centre.html
-          grep -q "familyroy-review:" /tmp/control-centre.html
+          for i in {1..18}; do
+            if curl --fail --silent --show-error "https://santsbabe.github.io/logbook-assistant/familyroy-control-centre-qa/" -o /tmp/control-centre.html \
+              && grep -q "handleFamilyRoyDeepLink" /tmp/control-centre.html \
+              && grep -q "consumeFamilyRoyReadinessHandoff" /tmp/control-centre.html \
+              && grep -q "familyroy-review:" /tmp/control-centre.html; then exit 0; fi
+            sleep 10
+          done
+          exit 1
       - name: Verify School Readiness CORS preflight
         run: |
           set -euo pipefail
