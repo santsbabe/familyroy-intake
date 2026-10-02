@@ -1,8 +1,9 @@
 import type { Config } from "@netlify/functions";
 import { getStore,getDeployStore } from "@netlify/blobs";
 import { timingSafeEqual } from "node:crypto";
+import { ROUTES } from "./core.mjs";
 
-const ALLOWED=new Set(["homework_quest","control_centre.school_readiness","control_centre.contacts_services","control_centre.repairs","control_centre.shopping_radar","control_centre.food_meal_planner","control_centre.calendar_events","control_centre.personal_admin","control_centre.pet_care","control_centre.electricity","review_queue"]);
+const ALLOWED=new Set(Object.values(ROUTES));
 function storeForEnvironment(){return Netlify.context?.deploy?.context==="production"?getStore("familyroy-intake",{consistency:"strong"}):getDeployStore("familyroy-intake");}
 function authorised(req:Request){const expected=Netlify.env.get("FAMILYROY_INTAKE_TOKEN")||"";const supplied=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");if(!expected||!supplied)return false;const a=Buffer.from(expected),b=Buffer.from(supplied);return a.length===b.length&&timingSafeEqual(a,b);}
 function routeKey(route:string){return route.replace(/[^a-z0-9._-]/gi,"_");}
