@@ -21,6 +21,9 @@ export default async()=>{
  results.push(check("Mixed share fan-out",g.routes.includes(ROUTES.SCHOOL_HOMEWORK)&&g.routes.includes(ROUTES.SCHOOL_READINESS)&&g.routes.includes(ROUTES.EVENTS),{routes:g.routes}));
  const tokenPresent=!!Netlify.env.get("FAMILYROY_INTAKE_TOKEN");
  results.push(check("Preview intake secret available to functions",tokenPresent));
+ const ccOrigin=Netlify.env.get("FAMILYROY_CONTROL_CENTRE_ORIGIN")||"",hqOrigin=Netlify.env.get("FAMILYROY_HOMEWORK_ORIGIN")||"";
+ results.push(check("School Readiness browser origin configured",ccOrigin==="https://santsbabe.github.io",{configured:!!ccOrigin}));
+ results.push(check("Homework Quest browser origin configured",/^https:\/\/deploy-preview-23--homework-quest-parent-console\.netlify\.app$/.test(hqOrigin),{configured:!!hqOrigin}));
  const ok=results.every(x=>x.pass);
  const rows=results.map(x=>`<section class="${x.pass?"ok":"bad"}"><h3>${x.pass?"✓":"✗"} ${esc(x.name)}</h3><pre>${esc(JSON.stringify(x,null,2))}</pre></section>`).join("");
  const html=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>FamilyRoy Acceptance Results</title><style>body{font:16px system-ui;max-width:760px;margin:32px auto;padding:0 18px}.ok h3{color:#087830}.bad h3{color:#b00020}pre{white-space:pre-wrap;background:#f4f4f4;padding:12px;border-radius:10px}</style></head><body><h1>${ok?"✓ ROUTER TESTS PASSED":"✗ TESTS FAILED"}</h1><p>Deploy Preview only · production untouched.</p>${rows}<p><strong>Next gate:</strong> destination handoff acceptance: one routed source must arrive once in each intended consumer without exposing the Intake master credential.</p></body></html>`;
