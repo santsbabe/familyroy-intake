@@ -36,3 +36,11 @@ export function recoveryState({status="",duplicate=false,next_actions=[]}={}){
 }
 
 export function handoffStatus(routes=[],handoffs={}){const summary=destinationSummary(routes,handoffs),browser=summary.filter(x=>DESTINATIONS[x.route]?.kind==="browser");return{browser_total:browser.length,browser_ready:browser.filter(x=>x.available).length,queued_total:summary.filter(x=>DESTINATIONS[x.route]?.kind!=="browser").length,all_browser_ready:browser.every(x=>x.available)};}
+
+export function shortcutPlan(response={},destinations={}){
+ const action=response.primary_action;
+ if(!action)return{message:response.shortcut_message||"Saved to FamilyRoy",open_url:null};
+ const base=destinations[action.route];if(!base)return{message:response.shortcut_message||"Saved to FamilyRoy",open_url:null};
+ const fragment=destinationFragment(action,destinations.intake_endpoint);if(!fragment)return{message:response.shortcut_message||"Saved to FamilyRoy",open_url:null};
+ return{message:response.shortcut_message||"Saved to FamilyRoy",open_url:String(base).replace(/#.*$/,"")+"#"+fragment};
+}
