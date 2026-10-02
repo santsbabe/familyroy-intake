@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "check:functions": "npx --yes esbuild netlify/functions/*.mts --outdir=/tmp/familyroy-function-check --platform=node --format=esm --packages=external"
   },
   "dependencies": {
     "@netlify/blobs": "latest",
