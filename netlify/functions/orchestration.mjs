@@ -48,3 +48,5 @@ export function shortcutPlan(response={},destinations={}){
 export function capabilityExposure(response={}){const caps=Object.values(response.handoffs||{}).map(x=>x?.capability).filter(Boolean);const serial=JSON.stringify({message:response.shortcut_message,destinations:response.destinations,recovery:response.recovery});return{capability_count:caps.length,leaked_in_safe_fields:caps.some(c=>serial.includes(c))};}
 
 export function redactedForDiagnostics(response={}){return{ok:response.ok,duplicate:response.duplicate,source_id:response.source_id,status:response.status,routes:response.routes,confidence:response.confidence,handoff_status:response.handoff_status,recovery:response.recovery,primary_route:response.primary_action?.route||null};}
+
+export function actionByRoute(response={},route=""){return(response.next_actions||[]).find(x=>x.route===route)||null;}
