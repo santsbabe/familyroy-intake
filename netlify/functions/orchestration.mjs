@@ -27,7 +27,7 @@ export function nextActions(routes=[],handoffs={}){
 
 export function choosePrimaryAction(actions=[]){if(!actions.length)return null;const priority=["control_centre.school_readiness","homework_quest"];return priority.map(route=>actions.find(x=>x.route===route)).find(Boolean)||actions[0];}
 
-export function destinationFragment(action,endpoint){if(!action?.capability||!endpoint)return null;const params=new URLSearchParams({familyroy:action.capability,endpoint:String(endpoint).replace(/\/$/,"")});return params.toString();}
+export function destinationFragment(action,endpoint){if(!action?.capability||!endpoint)return null;const e=String(endpoint);if(!/^https:\/\//i.test(e))return null;const params=new URLSearchParams({familyroy:action.capability,endpoint:e.replace(/\/$/,"")});return params.toString();}
 
 export function recoveryState({status="",duplicate=false,next_actions=[]}={}){
  if(status==="needs_review")return{state:"review",message:"Saved safely for review"};
