@@ -100,3 +100,8 @@ For a mixed school share, School Readiness is the primary browser destination; H
 When the final device acceptance is reached, extend the **existing** Shortcut after its working request/response block; do not delete or rebuild the working path. If `primary_action` is null, finish after the confirmation. If present, construct only the destination URL using the app's known base URL plus a **fragment** containing the returned capability and Intake endpoint. Never put the master bearer token or capability in a query string.
 
 This section is an implementation contract, not a request for Santie to edit the Shortcut now.
+
+### Recovery behaviour
+If the destination page does not open, the Intake record is already safe. Do not ask Santie to recreate or manually copy the school notice. Re-run Send to FamilyRoy on the same evidence: dedupe returns the same `source_id` and refreshes a capability only for destinations still pending.
+
+If a share has more than one browser destination, open only `primary_action`. The secondary action remains available in `next_actions`; do not open multiple tabs automatically. If no browser action is available, show the confirmation and stop.
