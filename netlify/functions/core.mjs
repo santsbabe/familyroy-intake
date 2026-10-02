@@ -4,7 +4,8 @@ export function normalisePayload(input={}){const text=String(input.text??"").tri
 export function fingerprint(payload){const canonical=JSON.stringify({source_type:payload.source_type,source_chat:payload.source_chat,sender:payload.sender,source_timestamp:payload.source_timestamp,text:payload.text,attachments:payload.attachments.map(a=>({name:a?.name||null,mime_type:a?.mime_type||a?.type||null,size:a?.size||null,sha256:a?.sha256||null}))});return crypto.createHash("sha256").update(canonical).digest("hex");}
 const hasAny=(t,words)=>words.some(w=>t.includes(w));
 const optionalSchool=/\b(optional|voluntary|if you would like|if you wish|welcome to|may participate|can participate|families are welcome|parents? may|parents? can|able to donate|purchase tickets?|buy tickets?)\b/i;
-const informationalSchool=/\b(for your information|fyi|school fees?|fee structure|uniform shop|newsletter|lost property|sharing of food|positive friendships)\b/i;\nconst schoolAdmin=/\b(school fees?|fee structure|payment|debit order|invoice|account)\b/i;
+const informationalSchool=/\b(for your information|fyi|school fees?|fee structure|uniform shop|newsletter|lost property|sharing of food|positive friendships)\b/i;
+const schoolAdmin=/\b(school fees?|fee structure|payment|debit order|invoice|account)\b/i;
 const readinessAction=/\b(bring|wear|pack|return|hand in|drop off|sign|complete|fill|submit|send|pay|prepare|collect|required|must|ensure|make sure|due)\b/i;
 const readinessObject=/\b(civvies|uniform|sports? kit|library (?:bag|book)|costume|hat|shoes?|shirt|money|form|permission|consent|project|raffle|donation|assessment (?:file|folder)|red book|homework book|book bag|swimming|gala|kaskar)\b/i;
 const learningTask=/\b(homework|huiswerk|spelling|reading|lees|maths|wiskunde|worksheet|revise|hersien|klanke|phonics|sight words?|practise|practice|learn|page(?:s)?\s+\d|poem)\b/i;
