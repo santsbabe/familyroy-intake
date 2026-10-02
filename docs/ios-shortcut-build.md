@@ -87,3 +87,16 @@ Current preview limit: 3 MiB decoded per attachment. Keep "Without Media" for Wh
 UX target after functional acceptance:
 - replace blocking Show Result with a non-blocking notification if iOS exposes the action reliably on the user's version.
 - preserve the current Show Result until the replacement has been proven; do not remove the working confirmation first.
+
+## v0.3 one-tap destination orchestration — do not rebuild yet
+The Intake response now returns:
+- `shortcut_message`: concise confirmation naming all routed destinations.
+- `next_actions[]`: only browser destinations that currently have a redeemable scoped capability.
+- `primary_action`: at most one recommended immediate destination, or null.
+- queued destinations such as Calendar continue asynchronously and do not force another app/page open.
+
+For a mixed school share, School Readiness is the primary browser destination; Homework Quest remains queued with its own capability. This avoids opening several tabs from one Share Sheet action.
+
+When the final device acceptance is reached, extend the **existing** Shortcut after its working request/response block; do not delete or rebuild the working path. If `primary_action` is null, finish after the confirmation. If present, construct only the destination URL using the app's known base URL plus a **fragment** containing the returned capability and Intake endpoint. Never put the master bearer token or capability in a query string.
+
+This section is an implementation contract, not a request for Santie to edit the Shortcut now.
