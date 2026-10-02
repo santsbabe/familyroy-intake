@@ -50,6 +50,9 @@ function ingestSchoolMail() {
           console.error("FamilyRoy intake failed", message.getId(), response.getResponseCode(), response.getContentText());
           continue;
         }
+        let intakeResult = {};
+        try { intakeResult = JSON.parse(response.getContentText()); } catch (_) {}
+        if (intakeResult.status !== "awaiting_enrichment") continue;
         for (const canvaUrl of urls) {
           const capture = capturePublicCanva_(intakeUrl, token, canvaUrl);
           if (!capture || !capture.usable) continue;
