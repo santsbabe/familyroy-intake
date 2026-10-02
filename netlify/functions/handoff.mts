@@ -28,7 +28,7 @@ export default async(req:Request)=>{
    if(!preflightOriginAllowed(origin,env))return new Response(null,{status:403,headers:{"cache-control":"no-store","vary":"Origin"}});
    return new Response(null,{status:204,headers:{"access-control-allow-origin":origin,"access-control-allow-methods":"GET, POST, OPTIONS","access-control-allow-headers":"authorization, content-type","vary":"Origin","cache-control":"no-store"}});
  }
- const token=extractHandoffToken(req.headers.get("authorization")||"");
+ if(req.method!=="GET"&&req.method!=="POST")return new Response("Method Not Allowed",{status:405,headers:{"cache-control":"no-store",Allow:"GET, POST, OPTIONS"}});\n const token=extractHandoffToken(req.headers.get("authorization")||"");
  if(!validCapability(token))return Response.json({ok:false,error:"invalid_capability"},{status:422,headers:{"cache-control":"no-store"}});
  const key=handoffKey(token),record:any=await store.get(key,{type:"json"}),state=handoffState(record);
  if(state==="missing")return Response.json({ok:false,error:"not_found"},{status:404,headers:{"cache-control":"no-store"}});
