@@ -31,7 +31,7 @@ function ingestSchoolMail() {
         source_timestamp: message.getDate().toISOString(),
         text: plain,
         canva_urls: urls,
-        raw_evidence_ref: "gmail:" + message.getId(),\n              capture_method: capture.capture_method || "public_html",
+        raw_evidence_ref: "gmail:" + message.getId(),
         client_context: {
           gmail_message_id: message.getId(),
           gmail_thread_id: thread.getId(),
