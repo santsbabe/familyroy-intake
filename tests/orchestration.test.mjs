@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {destinationSummary,shortcutMessage,nextActions,choosePrimaryAction,destinationFragment,recoveryState,handoffStatus,shortcutPlan,capabilityExposure} from "../netlify/functions/orchestration.mjs";
+import {destinationSummary,shortcutMessage,nextActions,choosePrimaryAction,destinationFragment,recoveryState,handoffStatus,shortcutPlan,capabilityExposure,redactedForDiagnostics} from "../netlify/functions/orchestration.mjs";
 const H={homework_quest:{capability:"x",expires_at:"2026-10-02T20:00:00Z",delivery:"scoped_handoff"},"control_centre.school_readiness":{capability:"y",expires_at:"2026-10-02T20:00:00Z",delivery:"scoped_handoff"}};
 test("multi-route response names each destination once",()=>{const routes=["homework_quest","control_centre.school_readiness","control_centre.calendar_events"];assert.equal(shortcutMessage({routes,handoffs:H}),"Saved → Homework Quest + School Readiness + Calendar");assert.deepEqual(destinationSummary(routes,H).map(x=>x.label),["Homework Quest","School Readiness","Calendar"]);});
 test("next actions contain only browser destinations with capabilities",()=>{const a=nextActions(["homework_quest","control_centre.school_readiness","control_centre.calendar_events"],H);assert.equal(a.length,2);assert.deepEqual(a.map(x=>x.label),["Open Homework Quest","Open School Readiness"]);assert.ok(a.every(x=>x.capability));});
@@ -25,3 +25,5 @@ test("Shortcut plan never opens a destination when its base is unknown",()=>{con
 test("handoff fragment refuses non-HTTPS Intake endpoints",()=>{assert.equal(destinationFragment({capability:"secret"},"http://intake.example"),null);assert.equal(destinationFragment({capability:"secret"},"javascript:alert(1)"),null);});
 
 test("capabilities do not leak into human-readable response fields",()=>{const response={handoffs:H,shortcut_message:"Saved → Homework Quest + School Readiness",destinations:destinationSummary(["homework_quest","control_centre.school_readiness"],H),recovery:{state:"ready"}};assert.deepEqual(capabilityExposure(response),{capability_count:2,leaked_in_safe_fields:false});});
+
+test("diagnostics projection strips capabilities and payloads",()=>{const d=redactedForDiagnostics({ok:true,duplicate:false,source_id:"a".repeat(64),status:"routed",routes:["homework_quest"],handoffs:H,primary_action:{route:"homework_quest",capability:"secret"},payload:{text:"private"}});const s=JSON.stringify(d);assert.equal(d.primary_route,"homework_quest");assert.ok(!s.includes("secret"));assert.ok(!s.includes("private"));assert.ok(!s.includes("capability"));});
