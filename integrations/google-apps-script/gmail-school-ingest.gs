@@ -62,7 +62,8 @@ function ingestSchoolMail() {
               resolved_url: capture.resolved_url,
               captured_at: capture.captured_at,
               content_text: capture.text,
-              evidence_ref: "gmail:" + message.getId()
+              evidence_ref: "gmail:" + message.getId(),
+              capture_method: capture.capture_method || "public_html"
             }]
           });
           const enrichedResponse = UrlFetchApp.fetch(intakeUrl, {
