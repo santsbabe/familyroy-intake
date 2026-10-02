@@ -13,6 +13,10 @@ export default async()=>{
  results.push(check("PNPS does not guess child",c.routes.includes(ROUTES.SCHOOL_READINESS)&&c.routes.includes(ROUTES.EVENTS)&&c.extracted.children.length===0,{routes:c.routes,children:c.extracted.children}));
  const d=buildRecord({text:"This looks useful"});
  results.push(check("Ambiguous → review",d.routes.length===1&&d.routes[0]===ROUTES.REVIEW,{routes:d.routes}));
+ const e=buildRecord({source_chat:"PNPS",text:"Parents may buy raffle tickets, but please return Alexander's consent form on Friday."});
+ results.push(check("Optional + mandatory notice",e.routes.includes(ROUTES.SCHOOL_READINESS)&&e.extracted.children.includes("Alexander"),{routes:e.routes,children:e.extracted.children}));
+ const f=buildRecord({source_chat:"PNPS",text:"Please complete the school fee payment form by Friday."});
+ results.push(check("School fee admin excluded from readiness",!f.routes.includes(ROUTES.SCHOOL_READINESS),{routes:f.routes}));
  const tokenPresent=!!Netlify.env.get("FAMILYROY_INTAKE_TOKEN");
  results.push(check("Preview intake secret available to functions",tokenPresent));
  const ok=results.every(x=>x.pass);
