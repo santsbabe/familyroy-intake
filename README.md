@@ -34,3 +34,10 @@ Consumption is idempotent: repeating an acknowledgement returns the already-cons
 The Intake bearer token is a server credential. It must not be embedded in Homework Quest browser code, the GitHub Pages Control Centre, localStorage, query strings, or committed configuration. Browser-only destinations receive routed payloads through a separate secure handoff/bridge; they do not call the master outbox directly.
 
 Duplicate intake is also a recovery operation: if a canonical source already exists but one of its deterministic outbox entries is missing, Intake recreates only the missing entry and leaves existing/consumed entries unchanged.
+
+## Scoped browser handoff
+Browser destinations never receive the master Intake bearer token. For pending Homework Quest and School Readiness routes, Intake can issue a random 256-bit capability with a 15-minute expiry. Only a SHA-256 hash of the capability is stored. The capability is route- and source-scoped.
+
+The browser presents the capability as `Authorization: Handoff <capability>` to `/handoff`; it is never placed in the request URL. GET redeems the routed payload. After the destination has durably ingested/deduplicated it, POST with `{"acknowledge":true}` consumes the corresponding outbox item. Acknowledgement is idempotent. Expired capabilities cannot be redeemed, and a new capability can be minted while the outbox item remains pending.
+
+Cross-origin redemption is deny-by-default. The server only returns CORS permission when the request origin exactly matches the route-specific configured origin (`FAMILYROY_CONTROL_CENTRE_ORIGIN` or `FAMILYROY_HOMEWORK_ORIGIN`). The Control Centre may receive a capability in a URL fragment for a one-tap handoff; it removes the fragment from browser history before calling Intake.
