@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { getStore,getDeployStore } from "@netlify/blobs";
 import { timingSafeEqual } from "node:crypto";
 import { ROUTES } from "./core.mjs";
-import { newCapability,handoffKey,createHandoffRecord,handoffState,validCapability,allowedOrigin,canAcknowledge,preflightOriginAllowed } from "./handoff-core.mjs";
+import { newCapability,handoffKey,createHandoffRecord,handoffState,validCapability,allowedOrigin,canAcknowledge,preflightOriginAllowed,extractHandoffToken } from "./handoff-core.mjs";
 
 const ALLOWED=new Set([ROUTES.SCHOOL_HOMEWORK,ROUTES.SCHOOL_READINESS]);
 function storeForEnvironment(){return Netlify.context?.deploy?.context==="production"?getStore("familyroy-intake",{consistency:"strong"}):getDeployStore({name:"familyroy-intake",consistency:"strong"});}
@@ -28,7 +28,7 @@ export default async(req:Request)=>{
    if(!preflightOriginAllowed(origin,env))return new Response(null,{status:403,headers:{"cache-control":"no-store","vary":"Origin"}});
    return new Response(null,{status:204,headers:{"access-control-allow-origin":origin,"access-control-allow-methods":"GET, POST, OPTIONS","access-control-allow-headers":"authorization, content-type","vary":"Origin","cache-control":"no-store"}});
  }
- const token=(req.headers.get("authorization")||"").replace(/^Handoff\\s+/i,"");
+ const token=extractHandoffToken(req.headers.get("authorization")||"");
  if(!validCapability(token))return Response.json({ok:false,error:"invalid_capability"},{status:422,headers:{"cache-control":"no-store"}});
  const key=handoffKey(token),record:any=await store.get(key,{type:"json"}),state=handoffState(record);
  if(state==="missing")return Response.json({ok:false,error:"not_found"},{status:404,headers:{"cache-control":"no-store"}});
