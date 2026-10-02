@@ -1,0 +1,10 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {HANDOFF_TTL_MS,newCapability,validCapability,tokenHash,handoffKey,createHandoffRecord,handoffState,allowedOrigin} from "../netlify/functions/handoff-core.mjs";
+
+test("handoff capabilities are high entropy and URL safe",()=>{const a=newCapability(),b=newCapability();assert.equal(a.length,43);assert.ok(validCapability(a));assert.notEqual(a,b);assert.notEqual(tokenHash(a),a);});
+test("handoff storage key never contains plaintext capability",()=>{const t=newCapability(),k=handoffKey(t);assert.ok(k.startsWith("handoffs/"));assert.ok(!k.includes(t));assert.match(k,/^handoffs\/[a-f0-9]{64}\.json$/);});
+test("handoff is route and source scoped",()=>{const t=newCapability(),r=createHandoffRecord({token:t,route:"homework_quest",source_id:"a".repeat(64),now:1000});assert.equal(r.route,"homework_quest");assert.equal(r.source_id,"a".repeat(64));assert.equal(r.status,"issued");assert.equal(Date.parse(r.expires_at),1000+HANDOFF_TTL_MS);});
+test("handoff rejects malformed capability and source id",()=>{assert.throws(()=>createHandoffRecord({token:"bad",route:"homework_quest",source_id:"a".repeat(64)}),/invalid_capability/);assert.throws(()=>createHandoffRecord({token:newCapability(),route:"homework_quest",source_id:"bad"}),/invalid_source_id/);});
+test("handoff state expires capabilities",()=>{const t=newCapability(),r=createHandoffRecord({token:t,route:"homework_quest",source_id:"b".repeat(64),now:1000,ttlMs:100});assert.equal(handoffState(r,1050),"issued");assert.equal(handoffState(r,1100),"expired");r.status="redeemed";assert.equal(handoffState(r,1050),"redeemed");r.status="acknowledged";assert.equal(handoffState(r,999999),"acknowledged");});
+test("browser origins are route specific",()=>{const env={FAMILYROY_CONTROL_CENTRE_ORIGIN:"https://santsbabe.github.io",FAMILYROY_HOMEWORK_ORIGIN:"https://homework.example"};assert.equal(allowedOrigin("control_centre.school_readiness",env),"https://santsbabe.github.io");assert.equal(allowedOrigin("homework_quest",env),"https://homework.example");assert.equal(allowedOrigin("review_queue",env),"");});
