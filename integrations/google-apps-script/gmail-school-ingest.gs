@@ -56,7 +56,12 @@ function ingestSchoolMail() {
         if (intakeResult.status !== "awaiting_enrichment") continue;
         for (const canvaUrl of urls) {
           const capture = capturePublicCanva_(intakeUrl, token, canvaUrl);
-          if (!capture || !capture.usable) continue;
+          if (!capture || !capture.usable) {
+            if (Date.now() - message.getDate().getTime() > 24 * 60 * 60 * 1000) {
+              reportCanvaFailure_(intakeUrl, token, payload, canvaUrl, capture && capture.error ? capture.error : "public_capture_unusable");
+            }
+            continue;
+          }
           const enriched = Object.assign({}, payload, {
             canva_captures: [{
               original_url: canvaUrl,
@@ -106,6 +111,23 @@ function capturePublicCanva_(intakeUrl, token, canvaUrl) {
   } catch (err) {
     console.error("Public Canva capture failed", canvaUrl, err);
     return null;
+  }
+}
+
+
+function reportCanvaFailure_(intakeUrl, token, payload, canvaUrl, reason) {
+  try {
+    UrlFetchApp.fetch(intakeUrl, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(Object.assign({}, payload, {
+        canva_failures: [{ url: canvaUrl, failed_at: new Date().toISOString(), reason: reason }]
+      })),
+      muteHttpExceptions: true,
+      headers: token ? { Authorization: "Bearer " + token } : {}
+    });
+  } catch (err) {
+    console.error("Could not report Canva capture failure", canvaUrl, err);
   }
 }
 
