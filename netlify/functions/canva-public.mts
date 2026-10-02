@@ -24,6 +24,19 @@ async function resolveCanva(url:string){
   if(!allowed(resolved)||!["canva.com","www.canva.com"].includes(new URL(resolved).hostname))throw new Error("unsafe_redirect");
   return resolved;
 }
+async function safeHtmlFetch(start:string){
+  let current=start;
+  for(let i=0;i<6;i++){
+    if(!allowed(current))throw new Error("unsafe_redirect");
+    const r=await fetch(current,{redirect:"manual",headers:{"user-agent":"Mozilla/5.0 FamilyRoy/1.0","accept":"text/html,application/xhtml+xml"}});
+    if(r.status>=300&&r.status<400){
+      const location=r.headers.get("location");if(!location)throw new Error("redirect_without_location");
+      current=new URL(location,current).toString();continue;
+    }
+    return{response:r,finalUrl:current};
+  }
+  throw new Error("too_many_redirects");
+}
 export default async(req:Request)=>{
   if(req.method!=="POST")return new Response("Method Not Allowed",{status:405,headers:{Allow:"POST"}});
   const expected=process.env.FAMILYROY_INTAKE_TOKEN;
@@ -32,11 +45,12 @@ export default async(req:Request)=>{
   const original=String(body?.url||"");
   try{
     const resolved=await resolveCanva(original);
-    const r=await fetch(resolved,{redirect:"follow",headers:{"user-agent":"Mozilla/5.0 FamilyRoy/1.0","accept":"text/html,application/xhtml+xml"}});
-    if(!r.ok)return Response.json({ok:false,error:"canva_fetch_failed",status:r.status,resolved_url:resolved},{status:502});
+    const fetched=await safeHtmlFetch(resolved);
+    const r=fetched.response;
+    if(!r.ok)return Response.json({ok:false,error:"canva_fetch_failed",status:r.status,resolved_url:fetched.finalUrl},{status:502});
     const html=await r.text();
     const text=visibleText(html);
-    return Response.json({ok:true,original_url:original,resolved_url:resolved,text,text_length:text.length,usable:text.length>=200,captured_at:new Date().toISOString()});
+    return Response.json({ok:true,original_url:original,resolved_url:fetched.finalUrl,text,text_length:text.length,usable:text.length>=200,captured_at:new Date().toISOString(),capture_method:"public_html"});
   }catch(e:any){return Response.json({ok:false,error:e?.message||"canva_resolve_failed"},{status:400});}
 };
 export const config: Config={path:"/canva-public"};
