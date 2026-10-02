@@ -35,4 +35,4 @@ export function recoveryState({status="",duplicate=false,next_actions=[]}={}){
  return{state:"saved",message:duplicate?"Already saved":"Saved safely"};
 }
 
-export function handoffStatus(routes=[],handoffs={}){const summary=destinationSummary(routes,handoffs),browser=summary.filter(x=>DESTINATIONS[x.route]?.kind==="browser");return{browser_total:browser.length,browser_ready:browser.filter(x=>x.available).length,queued_total:summary.filter(x=>!x.available).length,all_browser_ready:browser.every(x=>x.available)};}
+export function handoffStatus(routes=[],handoffs={}){const summary=destinationSummary(routes,handoffs),browser=summary.filter(x=>DESTINATIONS[x.route]?.kind==="browser");return{browser_total:browser.length,browser_ready:browser.filter(x=>x.available).length,queued_total:summary.filter(x=>DESTINATIONS[x.route]?.kind!=="browser").length,all_browser_ready:browser.every(x=>x.available)};}
