@@ -27,3 +27,20 @@ Canva content capture is intentionally a separate source-adapter step. Do not st
 ### Deployment model
 
 New emails/newsletters are runtime data and require no deployment. Deploy only when application code changes. Develop/test on a non-production branch or Deploy Preview; production remains an explicit release action.
+
+
+### Canva content authority
+
+QA against a real PNPS public-share newsletter confirmed that the public Canva viewer page can be reached but must not be treated as authoritative newsletter text. FamilyRoy therefore keeps public HTML as a reachability/diagnostic probe only. Automatic content enrichment must use Canva's authenticated MCP `get-design-content` capability (richtexts), preserving the full resolved share URL/collaboration token.
+
+Until MCP OAuth is configured, Canva-linked Gmail records remain `awaiting_enrichment`; persistent capture failures are moved to `needs_review` rather than silently treated as complete. Historical captures more than 24 hours after the source email are quarantined because reused/living Canva designs may have changed.
+
+### Reliability rules
+
+- Gmail message identity is the stable source key; a later Canva capture enriches the same record instead of creating a duplicate.
+- Re-sending the same Gmail evidence is idempotent.
+- Multi-link emails remain incomplete until every Canva link is captured or explicitly failed.
+- A failed public capture is retried during the 24-hour freshness window, then escalated to review.
+- Public/redirect URLs are restricted to HTTPS Canva hosts.
+- Deploy Preview builds run the test suite before functions are published.
+- Production remains an explicit release action.
