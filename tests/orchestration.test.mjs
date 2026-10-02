@@ -17,4 +17,4 @@ test("recovery state distinguishes saved, ready and review",()=>{assert.equal(re
 test("duplicate pending destination remains recoverable",()=>{assert.deepEqual(recoveryState({duplicate:true,next_actions:[{route:"homework_quest"}]}),{state:"ready",message:"Already saved — destination still available"});});
 
 test("handoff status reports mixed browser and queued delivery",()=>{assert.deepEqual(handoffStatus(["homework_quest","control_centre.school_readiness","control_centre.calendar_events"],H),{browser_total:2,browser_ready:2,queued_total:1,all_browser_ready:true});});
-test("missing capability is visible in diagnostics",()=>{const h={homework_quest:H.homework_quest};assert.deepEqual(handoffStatus(["homework_quest","control_centre.school_readiness"],h),{browser_total:2,browser_ready:1,queued_total:1,all_browser_ready:false});});
+test("missing capability is visible in diagnostics",()=>{const h={homework_quest:H.homework_quest};assert.deepEqual(handoffStatus(["homework_quest","control_centre.school_readiness"],h),{browser_total:2,browser_ready:1,queued_total:0,all_browser_ready:false});});
