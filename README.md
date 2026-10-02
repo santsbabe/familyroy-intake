@@ -46,3 +46,12 @@ Cross-origin redemption is deny-by-default. The server only returns CORS permiss
 The Intake response is deliberately small-brain-friendly for the phone: `shortcut_message` names every routed destination, `next_actions` contains only browser destinations with a live capability, and `primary_action` selects at most one page to open immediately. Mixed school shares prefer School Readiness as the immediate page while Homework Quest remains independently recoverable; queued destinations such as Calendar never cause extra tabs.
 
 `recovery` and `handoff_status` make failure states explicit. A source is considered safe once its canonical Intake record/outbox exists; failure to open or acknowledge a browser destination does not require reconstructing the source. Re-sharing identical evidence repairs/mints pending delivery state without duplicating the canonical source.
+
+## Acceptance status
+The preview branch is guarded by unit/regression tests, a Netlify-function compilation check, and an exact-commit live deploy-preview smoke workflow. The live smoke path exercises authenticated Intake, dedupe, scoped handoff lifecycle, origin/CORS enforcement, partial-route recovery, and a synthetic PNPS share through the real public Control Centre QA page in headless Chrome through acknowledgement.
+
+Synthetic browser-acceptance functions are preview-only and return 404 in production for all tested methods. They only create tagged synthetic PNPS evidence; the status probe refuses non-synthetic source IDs.
+
+The current iPhone contract is intentionally minimal: use the existing working Intake request, read `primary_action.launch_url`, and open it only when present. The server constructs the destination URL and keeps the scoped capability in the URL fragment. The Shortcut does not implement routing or capability construction.
+
+Queued means queued, not delivered: Calendar and other destinations remain explicit outbox work until a consumer exists.
