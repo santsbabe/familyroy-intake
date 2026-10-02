@@ -3,7 +3,8 @@ const cases=[
  {name:"PNPS multi-route",body:{source_type:"manual",source_chat:"PNPS Parents",text:"Alexander: homework is revise klanke. Bring library bag on Friday."},want:["homework_quest","control_centre.school_readiness","control_centre.calendar_events"],child:"Alexander"},
  {name:"HAW → Imogen",body:{source_type:"manual",source_chat:"100 Acre Wood",text:"Please bring the permission form tomorrow"},want:["control_centre.school_readiness"],child:"Imogen"},
  {name:"PNPS does not guess child",body:{source_type:"manual",source_chat:"PNPS",text:"Civvies on Friday"},want:["control_centre.school_readiness","control_centre.calendar_events"],child:null},
- {name:"Ambiguous → review",body:{source_type:"manual",text:"This looks useful"},want:["review_queue"],child:null}
+ {name:"Ambiguous → review",body:{source_type:"manual",text:"This looks useful"},want:["review_queue"],child:null},
+ {name:"Optional + mandatory school notice",body:{source_type:"manual",source_chat:"PNPS",text:"Parents may buy raffle tickets, but please return Alexander\'s consent form on Friday."},want:["control_centre.school_readiness","control_centre.calendar_events"],child:"Alexander"}
 ];
 async function post(origin:string,token:string|undefined,body:any){const headers:any={"content-type":"application/json"};if(token)headers.authorization=`Bearer ${token}`;const r=await fetch(origin+"/intake",{method:"POST",headers,body:JSON.stringify(body)});let data:any={};try{data=await r.json()}catch{}return{status:r.status,data};}
 export default async(req:Request)=>{
