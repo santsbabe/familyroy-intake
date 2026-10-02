@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { getStore,getDeployStore } from "@netlify/blobs";
 import { timingSafeEqual } from "node:crypto";
 import { ROUTES } from "./core.mjs";
-import { newCapability,handoffKey,createHandoffRecord,handoffState,validCapability,allowedOrigin } from "./handoff-core.mjs";
+import { newCapability,handoffKey,createHandoffRecord,handoffState,validCapability,allowedOrigin,canAcknowledge } from "./handoff-core.mjs";
 
 const ALLOWED=new Set([ROUTES.SCHOOL_HOMEWORK,ROUTES.SCHOOL_READINESS]);
 function storeForEnvironment(){return Netlify.context?.deploy?.context==="production"?getStore("familyroy-intake",{consistency:"strong"}):getDeployStore("familyroy-intake");}
@@ -45,8 +45,7 @@ export default async(req:Request)=>{
  if(req.method==="POST"){
    let body:any={};try{body=await req.json();}catch{}
    if(body?.acknowledge!==true)return Response.json({ok:false,error:"acknowledgement_required"},{status:422,headers});
-   if(String(body?.source_id||"")!==String(record.source_id))return Response.json({ok:false,error:"source_mismatch"},{status:409,headers});
-   if(record.status!=="redeemed")return Response.json({ok:false,error:"redeem_required"},{status:409,headers});
+   const gate=canAcknowledge(record,body?.source_id);if(!gate.ok)return Response.json({ok:false,error:gate.error},{status:gate.error==="expired"?410:409,headers});
    outbox.status="consumed";outbox.consumed_at=new Date().toISOString();outbox.consumer=String(body?.consumer||record.route);await store.setJSON(`outbox/${routeKey(record.route)}/${record.source_id}.json`,outbox);
    record.status="acknowledged";record.acknowledged_at=outbox.consumed_at;record.consumer=outbox.consumer;await store.setJSON(key,record);
    return Response.json({ok:true,duplicate:false,status:"acknowledged",route:record.route,source_id:record.source_id},{headers});
