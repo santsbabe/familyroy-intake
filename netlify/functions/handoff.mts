@@ -34,13 +34,13 @@ export default async(req:Request)=>{
  }
  if(!headers["access-control-allow-origin"]&&req.headers.get("origin"))return Response.json({ok:false,error:"origin_not_allowed"},{status:403,headers});
  if(state==="expired")return Response.json({ok:false,error:"expired"},{status:410,headers});
- if(state==="acknowledged")return Response.json({ok:true,duplicate:true,status:"acknowledged",route:record.route,source_id:record.source_id},{headers});
+ if(state==="acknowledged")return Response.json({ok:true,duplicate:true,status:"acknowledged",route:record.route,source_id:record.source_id,recovery:"already_delivered"},{headers});
  const outbox:any=await loadOutbox(store,record.route,record.source_id);
  if(!outbox)return Response.json({ok:false,error:"source_missing"},{status:404,headers});
  if(outbox.status==="consumed"){record.status="acknowledged";record.acknowledged_at=outbox.consumed_at||new Date().toISOString();await store.setJSON(key,record);return Response.json({ok:true,duplicate:true,status:"acknowledged",route:record.route,source_id:record.source_id},{headers});}
  if(req.method==="GET"){
    if(record.status!=="redeemed"){record.status="redeemed";record.redeemed_at=new Date().toISOString();await store.setJSON(key,record);}
-   return Response.json({ok:true,status:"redeemed",route:record.route,source_id:record.source_id,payload:outbox.payload,expires_at:record.expires_at},{headers});
+   return Response.json({ok:true,status:"redeemed",route:record.route,source_id:record.source_id,payload:outbox.payload,expires_at:record.expires_at,recovery:"ack_after_durable_ingest"},{headers});
  }
  if(req.method==="POST"){
    let body:any={};try{body=await req.json();}catch{}
