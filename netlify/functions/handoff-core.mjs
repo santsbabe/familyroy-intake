@@ -22,3 +22,5 @@ export function allowedOrigin(route,env={}){
 }
 
 export function canAcknowledge(record,sourceId,now=Date.now()){const state=handoffState(record,now);if(state==="expired")return{ok:false,error:"expired"};if(state==="acknowledged")return{ok:true,duplicate:true};if(String(sourceId||"")!==String(record?.source_id||""))return{ok:false,error:"source_mismatch"};if(state!=="redeemed")return{ok:false,error:"redeem_required"};return{ok:true,duplicate:false};}
+
+export function preflightOriginAllowed(origin,env={}){const o=String(origin||"");if(!o)return false;return["FAMILYROY_CONTROL_CENTRE_ORIGIN","FAMILYROY_HOMEWORK_ORIGIN"].some(k=>String(env[k]||"")===o);}
