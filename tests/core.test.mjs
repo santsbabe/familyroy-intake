@@ -37,3 +37,6 @@ test("ambiguous PNPS text preserves school and source id in review",()=>{const r
 
 test("dated civvies implies a preparation obligation",()=>{const r=buildRecord({source_chat:"PNPS",text:"Civvies on Friday"});assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));});
 test("bare gala date is an event, not a packing obligation",()=>{const r=buildRecord({source_chat:"PNPS",text:"Gala on Friday"});assert.ok(r.routes.includes(ROUTES.EVENTS));assert.ok(!r.routes.includes(ROUTES.SCHOOL_READINESS));});
+
+test("must wear uniform remains readiness",()=>{const r=buildRecord({source_chat:"PNPS",text:"Harrison must wear sports kit on Friday."});assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));});
+test("required consent form remains readiness without learning leakage",()=>{const r=buildRecord({source_chat:"PNPS",text:"Consent form required by Friday."});assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));});
