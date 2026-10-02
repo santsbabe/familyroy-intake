@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {HANDOFF_TTL_MS,newCapability,validCapability,tokenHash,handoffKey,createHandoffRecord,handoffState,allowedOrigin,canAcknowledge,preflightOriginAllowed} from "../netlify/functions/handoff-core.mjs";
+import {HANDOFF_TTL_MS,newCapability,validCapability,tokenHash,handoffKey,createHandoffRecord,handoffState,allowedOrigin,canAcknowledge,preflightOriginAllowed,extractHandoffToken} from "../netlify/functions/handoff-core.mjs";
 
 test("handoff capabilities are high entropy and URL safe",()=>{const a=newCapability(),b=newCapability();assert.equal(a.length,43);assert.ok(validCapability(a));assert.notEqual(a,b);assert.notEqual(tokenHash(a),a);});
 test("handoff storage key never contains plaintext capability",()=>{const t=newCapability(),k=handoffKey(t);assert.ok(k.startsWith("handoffs/"));assert.ok(!k.includes(t));assert.match(k,/^handoffs\/[a-f0-9]{64}\.json$/);});
@@ -13,3 +13,5 @@ test("acknowledgement requires redemption and matching source",()=>{const token=
 test("expired handoff cannot acknowledge and acknowledged replay is idempotent",()=>{const token=newCapability(),source="a".repeat(64),r=createHandoffRecord({token,route:"homework_quest",source_id:source,now:1000,ttlMs:100});r.status="redeemed";assert.deepEqual(canAcknowledge(r,source,1200),{ok:false,error:"expired"});r.status="acknowledged";assert.deepEqual(canAcknowledge(r,source,1200),{ok:true,duplicate:true});assert.deepEqual(canAcknowledge(r,"b".repeat(64),1200),{ok:false,error:"source_mismatch"});});
 
 test("CORS preflight recognises configured browser origins without a capability",()=>{const env={FAMILYROY_CONTROL_CENTRE_ORIGIN:"https://santsbabe.github.io",FAMILYROY_HOMEWORK_ORIGIN:"https://deploy-preview-23--homework-quest-parent-console.netlify.app"};assert.equal(preflightOriginAllowed("https://santsbabe.github.io",env),true);assert.equal(preflightOriginAllowed("https://deploy-preview-23--homework-quest-parent-console.netlify.app",env),true);assert.equal(preflightOriginAllowed("https://evil.example",env),false);assert.equal(preflightOriginAllowed("",env),false);});
+
+test("Handoff authorization parser strips scheme and whitespace",()=>{const token=newCapability();assert.equal(extractHandoffToken("Handoff "+token),token);assert.equal(extractHandoffToken("handoff   "+token),token);assert.equal(extractHandoffToken(token),token);});
