@@ -23,14 +23,14 @@ export default async(req:Request)=>{
    await store.setJSON(handoffKey(token),record);
    return Response.json({ok:true,route,source_id:sourceId,capability:token,expires_at:record.expires_at},{status:201,headers:{"cache-control":"no-store"}});
  }
- const token=url.searchParams.get("capability")||"";
+ const token=(req.headers.get("authorization")||"").replace(/^Handoff\\s+/i,"");
  if(!validCapability(token))return Response.json({ok:false,error:"invalid_capability"},{status:422,headers:{"cache-control":"no-store"}});
  const key=handoffKey(token),record:any=await store.get(key,{type:"json"}),state=handoffState(record);
  if(state==="missing")return Response.json({ok:false,error:"not_found"},{status:404,headers:{"cache-control":"no-store"}});
  const headers=cors(record.route,req);
  if(req.method==="OPTIONS"){
    if(!headers["access-control-allow-origin"])return new Response(null,{status:403,headers});
-   return new Response(null,{status:204,headers:{...headers,"access-control-allow-methods":"GET, POST, OPTIONS","access-control-allow-headers":"content-type"}});
+   return new Response(null,{status:204,headers:{...headers,"access-control-allow-methods":"GET, POST, OPTIONS","access-control-allow-headers":"authorization, content-type"}});
  }
  if(!headers["access-control-allow-origin"]&&req.headers.get("origin"))return Response.json({ok:false,error:"origin_not_allowed"},{status:403,headers});
  if(state==="expired")return Response.json({ok:false,error:"expired"},{status:410,headers});
