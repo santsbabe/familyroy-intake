@@ -15,11 +15,12 @@ export function destinationSummary(routes=[],handoffs={}){
  return routes.map(route=>({route,label:DESTINATIONS[route]?.label||route,delivery:handoffs[route]?.delivery||DESTINATIONS[route]?.kind||"queued",available:!!handoffs[route]}));
 }
 export function shortcutMessage({duplicate=false,status="",routes=[],handoffs={}}={}){
- const names=destinationSummary(routes,handoffs).map(x=>x.label);
+ const summary=destinationSummary(routes,handoffs),ready=summary.filter(x=>x.available).map(x=>x.label),queued=summary.filter(x=>DESTINATIONS[x.route]?.kind==="queued").map(x=>x.label);
  if(status==="needs_review")return duplicate?"Already saved — still needs review":"Saved — needs review";
- if(!names.length)return duplicate?"Already in FamilyRoy":"Saved to FamilyRoy";
- const prefix=duplicate?"Already saved":"Saved";
- return `${prefix} → ${names.join(" + ")}`;
+ const prefix=duplicate?"Already saved":"Saved",parts=[];
+ if(ready.length)parts.push(ready.join(" + ")+" ready");
+ if(queued.length)parts.push(queued.join(" + ")+" queued");
+ return parts.length?prefix+" · "+parts.join(" · "):(duplicate?"Already in FamilyRoy":"Saved to FamilyRoy");
 }
 export function nextActions(routes=[],handoffs={}){
  return destinationSummary(routes,handoffs).filter(x=>x.available).map(x=>({route:x.route,label:`Open ${x.label}`,capability:handoffs[x.route].capability,expires_at:handoffs[x.route].expires_at}));
