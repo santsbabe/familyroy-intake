@@ -24,7 +24,46 @@ if(hasAny(t,["recipe","dinner","lunch","breakfast","meal","ingredients","vegan",
 if(!schoolContext&&hasAny(t,["invitation","invite","rsvp","appointment","meeting","party","concert","on saturday","on sunday","save the date"])){routes.push(ROUTES.EVENTS);reasons.push("event/date language");confidence=Math.max(confidence,.75);}
 if(hasAny(t,["passport","home affairs","licence","license","id document","birth certificate","sars","municipal account"])){routes.push(ROUTES.ADMIN);reasons.push("personal admin language");confidence=Math.max(confidence,.82);}
 if(hasAny(t,["vet","vaccine","vaccination","dog","cat","pet","rescue","groomer"])){routes.push(ROUTES.PETS);reasons.push("pet-care language");confidence=Math.max(confidence,.75);}
-if(hasAny(t,["meter reading","electricity meter","kwh","prepaid electricity"])){routes.push(ROUTES.ELECTRICITY);reasons.push("electricity language");confidence=Math.max(confidence,.9);}
+const electricityContext=payload.source_type==="electricity_meter_photo"||payload.client_context?.route===ROUTES.ELECTRICITY||hasAny(t,["meter reading","electricity meter","kwh","prepaid electricity"]);if(electricityContext){routes.push(ROUTES.ELECTRICITY);reasons.push(payload.source_type==="electricity_meter_photo"?"electricity meter photo":"electricity language");confidence=Math.max(confidence,.9);}
 const unique=[...new Set(routes)];return{routes:(!unique.length||confidence<.6)?[ROUTES.REVIEW]:unique,confidence,reasons:reasons.length?reasons:["no sufficiently confident route"],school:schoolName,children:inferChildren(payload.text,schoolName)};}
 export function buildRoutePayloads(payload,routing,source_id){const base={source_id,source_type:payload.source_type,source_chat:payload.source_chat,sender:payload.sender,source_timestamp:payload.source_timestamp,text:payload.text,evidence:payload.attachments};const out={};for(const route of routing.routes){if(route===ROUTES.SCHOOL_HOMEWORK)out[route]={...base,school:routing.school,children:routing.children,mode:"import_candidate",fidelity:"preserve_source"};else if(route===ROUTES.SCHOOL_READINESS)out[route]={...base,school:routing.school,children:routing.children,mode:"parse_readiness",dedupe_key:source_id};else if(route===ROUTES.EVENTS)out[route]={...base,school:routing.school,children:routing.children,mode:"extract_event_candidate"};else if(route===ROUTES.REVIEW)out[route]={...base,mode:"human_review"};else out[route]={...base,mode:"domain_intake"};}return out;}
 export function buildRecord(input,now=new Date()){const payload=normalisePayload(input),source_id=fingerprint(payload),routing=classify(payload),route_payloads=buildRoutePayloads(payload,routing,source_id);return{source_id,source_type:payload.source_type,received_at:now.toISOString(),source_chat:payload.source_chat,sender:payload.sender,source_timestamp:payload.source_timestamp,content_types:payload.content_types,raw_evidence_ref:payload.raw_evidence_ref,text:payload.text,attachments:payload.attachments,extracted:{school:routing.school,children:routing.children},routes:routing.routes,route_payloads,confidence:routing.confidence,routing_reasons:routing.reasons,status:routing.routes.includes(ROUTES.REVIEW)?"needs_review":"routed"};}
+
+export function extractElectricityReading(input={}) {
+  const explicitRaw=input.reading_kwh ?? input.meter_reading ?? input.reading;
+  const explicit=explicitRaw===null||explicitRaw===undefined||explicitRaw===""?NaN:Number(explicitRaw);
+  if(Number.isFinite(explicit)&&explicit>=0&&explicit<=999.99){
+    return{reading_kwh:Number(explicit.toFixed(2)),confidence:.99,source:"explicit"};
+  }
+  const t=String(input.text??"");
+  const matches=[...t.matchAll(/(?:^|[^\d])(\d{1,3}[\.,]\d{1,2})(?=$|[^\d])/g)]
+    .map(m=>Number(m[1].replace(",",".")))
+    .filter(n=>Number.isFinite(n)&&n>=0&&n<=999.99);
+  if(matches.length===1)return{reading_kwh:Number(matches[0].toFixed(2)),confidence:.9,source:"ocr_text_decimal"};
+  return{reading_kwh:null,confidence:0,source:"unresolved"};
+}
+
+export function buildElectricityReading(input={},previousReading=null,now=new Date()){
+  const parsed=extractElectricityReading(input);
+  const reading_at=input.source_timestamp||input.reading_at||now.toISOString();
+  const previousRaw=previousReading===null||previousReading===undefined||previousReading===""?null:Number(previousReading);
+  const previous=Number.isFinite(previousRaw)?previousRaw:null;
+  let usage_kwh=null,anomaly=null;
+  if(parsed.reading_kwh===null)anomaly="reading_unresolved";
+  else if(previous!==null){
+    usage_kwh=Number((previous-parsed.reading_kwh).toFixed(2));
+    if(usage_kwh<0)anomaly="reading_increased";
+    else if(usage_kwh>100)anomaly="usage_spike";
+  }
+  return{
+    reading_kwh:parsed.reading_kwh,
+    reading_at,
+    previous_reading_kwh:previous,
+    usage_kwh,
+    evidence_ref:input.raw_evidence_ref||null,
+    extraction_confidence:parsed.confidence,
+    extraction_source:parsed.source,
+    status:anomaly?"needs_review":"logged",
+    anomaly
+  };
+}
