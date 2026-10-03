@@ -110,8 +110,11 @@ If a share has more than one browser destination, open only `primary_action`. Th
 The server now returns `primary_action.launch_url` when there is one immediate browser destination. The URL is already complete and carries the short-lived capability only in its fragment.
 
 This reduces the eventual iPhone change to the smallest practical extension of the existing working Shortcut:
-1. Read `primary_action.launch_url` from the existing Intake response.
+1. Read top-level `launch_url` from the existing Intake response.
 2. If it has a value, Open URL.
 3. If it is empty, finish normally.
 
 The Shortcut does **not** need to know route names, destination base URLs, the Intake endpoint for handoff construction, or any handoff token logic. Do not rebuild the existing request/authentication path.
+
+### iOS compatibility simplification
+The response also exposes the selected `launch_url` at the top level. iOS Shortcuts should read this top-level key directly from `Contents of URL`; do not traverse `primary_action` for the launch URL. `primary_action.launch_url` remains for structured/API consumers and must equal the top-level value.
