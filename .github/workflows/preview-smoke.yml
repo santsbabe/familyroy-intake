@@ -1,0 +1,160 @@
+name: FamilyRoy preview smoke
+on:
+  push:
+    branches: ["preview/**"]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Netlify to publish this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for i in {1..30}; do
+            state=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/status" --jq '.statuses[] | select(.context=="netlify/familyroy-intake/deploy-preview") | .state' | head -1)
+            if [ "$state" = success ]; then
+              url=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/status" --jq '.statuses[] | select(.context=="netlify/familyroy-intake/deploy-preview") | .target_url' | head -1)
+              test -n "$url"
+              echo "NETLIFY_PREVIEW_URL=${url%/}" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            if [ "$state" = failure ] || [ "$state" = error ]; then echo "Netlify preview failed"; exit 1; fi
+            sleep 10
+          done
+          echo "Timed out waiting for this commit's Netlify preview"
+          exit 1
+      - name: Wait for deploy preview health
+        run: |
+          set -euo pipefail
+          base="$NETLIFY_PREVIEW_URL"
+          for i in {1..18}; do
+            if curl --fail --silent --show-error "$base/health" | grep -q '"ok":true'; then break; fi
+            if [ "$i" = 18 ]; then echo "Preview did not become healthy"; exit 1; fi
+            sleep 10
+          done
+      - name: Run public preview acceptance page
+        run: |
+          set -euo pipefail
+          base="$NETLIFY_PREVIEW_URL"
+          for i in {1..18}; do
+            code=$(curl --silent --show-error -o /tmp/acceptance.html -w "%{http_code}" "$base/acceptance-results")
+            if [ "$code" = 200 ] && grep -q "ROUTER TESTS PASSED" /tmp/acceptance.html; then exit 0; fi
+            sleep 10
+          done
+          cat /tmp/acceptance.html
+          exit 1
+      - name: Run authenticated live Intake acceptance
+        run: |
+          set -euo pipefail
+          body=$(curl --fail --silent --show-error "$NETLIFY_PREVIEW_URL/acceptance")
+          echo "$body" > /tmp/live-acceptance.json
+          python - <<'PY'
+          import json
+          x=json.load(open("/tmp/live-acceptance.json"))
+          assert x.get("ok") is True, x
+          assert x.get("production_untouched") is True, x
+          names={r["name"]:r for r in x.get("results",[])}
+          assert names["Missing token rejected"]["pass"]
+          assert names["Wrong token rejected"]["pass"]
+          assert names["Duplicate ingestion"]["pass"]
+          assert names["PNPS multi-route"]["pass"]
+          assert names["Scoped handoff redeem → ack → partial duplicate recovery"]["pass"]
+          PY
+      - name: Inspect latest electricity reading
+        run: |
+          set -euo pipefail
+          body=$(curl --fail --silent --show-error "$NETLIFY_PREVIEW_URL/electricity-latest")
+          history=$(curl --fail --silent --show-error "$NETLIFY_PREVIEW_URL/electricity-readings")
+          echo "ELECTRICITY_LATEST=$body"
+          echo "ELECTRICITY_HISTORY=$history"
+          echo "$body" > /tmp/electricity-latest.json
+          echo "$history" > /tmp/electricity-history.json
+          python - <<'PY'
+          import json
+          x=json.load(open("/tmp/electricity-latest.json"))
+          h=json.load(open("/tmp/electricity-history.json"))
+          assert x.get("ok") is True, x
+          assert h.get("ok") is True, h
+          latest=x.get("latest")
+          if latest is not None:
+              assert isinstance(latest.get("reading_kwh"), (int,float)), latest
+              assert latest.get("status") in ("logged","needs_review"), latest
+          PY
+      - name: Verify live Control Centre QA receiver
+        run: |
+          set -euo pipefail
+          for i in {1..18}; do
+            if curl --fail --silent --show-error "https://santsbabe.github.io/logbook-assistant/familyroy-control-centre-qa/" -o /tmp/control-centre.html \
+              && grep -q "handleFamilyRoyDeepLink" /tmp/control-centre.html \
+              && grep -q "consumeFamilyRoyReadinessHandoff" /tmp/control-centre.html \
+              && grep -q "familyroy-review:" /tmp/control-centre.html; then exit 0; fi
+            sleep 10
+          done
+          exit 1
+      - name: Complete synthetic handoff through real Control Centre browser
+        run: |
+          set -euo pipefail
+          base="$NETLIFY_PREVIEW_URL"
+          probe=$(curl --fail --silent --show-error "$base/browser-acceptance")
+          launch=$(echo "$probe" | jq -r '.launch_url')
+          source_id=$(echo "$probe" | jq -r '.source_id')
+          test -n "$launch"
+          test -n "$source_id"
+          browser=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          "$browser" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=7000 --dump-dom "$launch" > /tmp/control-centre-handoff.html
+          grep -qi "library bag" /tmp/control-centre-handoff.html
+          for i in {1..12}; do
+            status=$(curl --fail --silent --show-error "$base/browser-acceptance-status?source_id=$source_id")
+            if [ "$(echo "$status" | jq -r '.consumed')" = true ]; then
+              test "$(echo "$status" | jq -r '.consumer')" = "control_centre.school_readiness"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "$status"
+          exit 1
+      - name: Verify preview-only acceptance probes are not exposed by production
+        run: |
+          set -euo pipefail
+          prod="https://familyroy-intake.netlify.app"
+          for path in browser-acceptance browser-acceptance-status; do
+            code=$(curl --silent --show-error -o /dev/null -w "%{http_code}" "$prod/$path")
+            test "$code" = 404
+          done
+      - name: Verify School Readiness CORS preflight
+        run: |
+          set -euo pipefail
+          h=$(mktemp)
+          curl --silent --show-error -D "$h" -o /dev/null -X OPTIONS \
+            -H "Origin: https://santsbabe.github.io" \
+            -H "Access-Control-Request-Method: GET" \
+            -H "Access-Control-Request-Headers: authorization" \
+            "$NETLIFY_PREVIEW_URL/handoff"
+          grep -qi '^HTTP/.* 204' "$h"
+          grep -qi '^access-control-allow-origin: https://santsbabe.github.io' "$h"
+          grep -qi '^access-control-allow-headers: .*authorization' "$h"
+      - name: Verify Homework Quest CORS preflight
+        run: |
+          set -euo pipefail
+          h=$(mktemp)
+          curl --silent --show-error -D "$h" -o /dev/null -X OPTIONS \
+            -H "Origin: https://deploy-preview-23--homework-quest-parent-console.netlify.app" \
+            -H "Access-Control-Request-Method: GET" \
+            -H "Access-Control-Request-Headers: authorization" \
+            "$NETLIFY_PREVIEW_URL/handoff"
+          grep -qi '^HTTP/.* 204' "$h"
+          grep -qi '^access-control-allow-origin: https://deploy-preview-23--homework-quest-parent-console.netlify.app' "$h"
+      - name: Reject unsupported handoff method without capability processing
+        run: |
+          code=$(curl --silent --show-error -o /dev/null -w "%{http_code}" -X DELETE \
+            "$NETLIFY_PREVIEW_URL/handoff")
+          test "$code" = 405
+      - name: Reject unconfigured CORS origin
+        run: |
+          code=$(curl --silent --show-error -o /dev/null -w "%{http_code}" -X OPTIONS \
+            -H "Origin: https://evil.example" \
+            -H "Access-Control-Request-Method: GET" \
+            -H "Access-Control-Request-Headers: authorization" \
+            "$NETLIFY_PREVIEW_URL/handoff")
+          test "$code" = 403

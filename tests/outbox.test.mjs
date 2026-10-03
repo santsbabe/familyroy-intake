@@ -1,0 +1,11 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {ensureRouteOutbox,outboxKey,pendingRoutesFromEnsure} from "../netlify/functions/outbox-core.mjs";
+function fakeStore(seed={}){const data=new Map(Object.entries(seed));return{data,async get(k){return data.get(k)||null},async setJSON(k,v){data.set(k,structuredClone(v));}}}
+const source="a".repeat(64),record={source_id:source,received_at:"2026-10-02T00:00:00Z",route_payloads:{homework_quest:{text:"read"},"control_centre.school_readiness":{text:"bring bag"}}};
+test("new source creates one pending outbox item per route",async()=>{const s=fakeStore(),x=await ensureRouteOutbox(s,record);assert.equal(x.created.length,2);assert.equal(s.data.size,2);assert.equal(s.data.get(outboxKey("homework_quest",source)).status,"pending");});
+test("duplicate repair creates only missing route",async()=>{const hk=outboxKey("homework_quest",source),existing={source_id:source,route:"homework_quest",payload:{text:"read"},status:"pending",created_at:record.received_at},s=fakeStore({[hk]:existing}),x=await ensureRouteOutbox(s,record,{repairOnly:true});assert.deepEqual(x.created.map(v=>v.route),["control_centre.school_readiness"]);assert.equal(x.existing.length,1);assert.deepEqual(s.data.get(hk),existing);});
+test("consumed outbox item is never resurrected",async()=>{const hk=outboxKey("homework_quest",source),consumed={source_id:source,route:"homework_quest",status:"consumed",consumed_at:"later"},s=fakeStore({[hk]:consumed});await ensureRouteOutbox(s,record,{repairOnly:true});assert.deepEqual(s.data.get(hk),consumed);assert.equal(s.data.get(outboxKey("control_centre.school_readiness",source)).status,"pending");});
+test("outbox key sanitises route but preserves source id",()=>{assert.equal(outboxKey("control centre/evil",source),`outbox/control_centre_evil/${source}.json`);});
+
+test("pending route derivation excludes consumed destinations",()=>{const x=pendingRoutesFromEnsure({created:[{route:"homework_quest",status:"pending"}],existing:[{route:"control_centre.school_readiness",status:"consumed"},{route:"control_centre.calendar_events",status:"pending"}]});assert.deepEqual([...x].sort(),["control_centre.calendar_events","homework_quest"]);});
