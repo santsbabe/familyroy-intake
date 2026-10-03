@@ -65,12 +65,17 @@ jobs:
         run: |
           set -euo pipefail
           body=$(curl --fail --silent --show-error "$NETLIFY_PREVIEW_URL/electricity-latest")
+          history=$(curl --fail --silent --show-error "$NETLIFY_PREVIEW_URL/electricity-readings")
           echo "ELECTRICITY_LATEST=$body"
+          echo "ELECTRICITY_HISTORY=$history"
           echo "$body" > /tmp/electricity-latest.json
+          echo "$history" > /tmp/electricity-history.json
           python - <<'PY'
           import json
           x=json.load(open("/tmp/electricity-latest.json"))
+          h=json.load(open("/tmp/electricity-history.json"))
           assert x.get("ok") is True, x
+          assert h.get("ok") is True, h
           latest=x.get("latest")
           if latest is not None:
               assert isinstance(latest.get("reading_kwh"), (int,float)), latest
