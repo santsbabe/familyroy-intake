@@ -1,10 +1,10 @@
 import type { Config } from "@netlify/functions";
-import { getDeployStore } from "@netlify/blobs";
+import { getStore } from "@netlify/blobs";
 
 export default async () => {
   if(Netlify.context?.deploy?.context==="production") return new Response("Not Found",{status:404});
-  const store=getDeployStore({name:"familyroy-intake",consistency:"strong"});
-  const listed:any=await store.list({prefix:"electricity/readings/"});
+  const store=getStore("familyroy-electricity-preview",{consistency:"strong"});
+  const listed:any=await store.list({prefix:"readings/"});
   const rows:any[]=[];
   for(const blob of listed.blobs||[]){
     const row:any=await store.get(blob.key,{type:"json"});
