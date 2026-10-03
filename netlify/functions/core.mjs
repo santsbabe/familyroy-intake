@@ -5,3 +5,43 @@ export function fingerprint(payload){const canonical=JSON.stringify({source_type
 function hasAny(t,words){return words.some(w=>t.includes(w));}
 export function classify(payload){const t=payload.text.toLowerCase();const routes=[];const reasons=[];let confidence=.45;const school=hasAny(t,["pnps","pinelands north","red roots","100 acre","homework","huiswerk","spelling","reading","lees","teacher","grade r","class","school"]);const readiness=hasAny(t,["civvies","uniform","sports kit","library","bring","wear","shirt","money","form","permission","project","themed","bokke","springbok"]);const homework=hasAny(t,["homework","huiswerk","spelling","reading","lees","maths","wiskunde","worksheet","revise","hersien","klanke","caps"]);if(school&&homework){routes.push(ROUTES.SCHOOL_HOMEWORK);reasons.push("school/homework language");confidence=Math.max(confidence,.88);}if(school&&readiness){routes.push(ROUTES.SCHOOL_READINESS);reasons.push("school readiness/action language");confidence=Math.max(confidence,.86);}if(hasAny(t,["plumber","electrician","handyman","cleaner","cleaning","gardener","repair","fix","recommend","recommendation","contact number","whatsapp him","whatsapp her"])){routes.push(ROUTES.CONTACTS);reasons.push("service/contact recommendation");confidence=Math.max(confidence,.78);if(hasAny(t,["repair","fix","broken","leak","plumber","electrician","handyman"]))routes.push(ROUTES.REPAIRS);}if(hasAny(t,["special","sale","deal","price","checkers","pick n pay","pnp","woolworths","food lover","dis-chem","clicks","takealot","temu"])){routes.push(ROUTES.SHOPPING);reasons.push("shopping/deal language");confidence=Math.max(confidence,.8);}if(hasAny(t,["recipe","dinner","lunch","breakfast","meal","ingredients","vegan","vegetarian"])){routes.push(ROUTES.FOOD);reasons.push("food/meal language");confidence=Math.max(confidence,.72);}if(hasAny(t,["invitation","invite","rsvp","appointment","meeting","party","concert","on saturday","on sunday","at 18:","at 19:","save the date"])){routes.push(ROUTES.EVENTS);reasons.push("event/date language");confidence=Math.max(confidence,.75);}if(hasAny(t,["passport","home affairs","licence","license","id document","birth certificate","sars","municipal account"])){routes.push(ROUTES.ADMIN);reasons.push("personal admin language");confidence=Math.max(confidence,.82);}if(hasAny(t,["vet","vaccine","vaccination","dog","cat","pet","rescue","groomer"])){routes.push(ROUTES.PETS);reasons.push("pet-care language");confidence=Math.max(confidence,.75);}if(hasAny(t,["meter reading","electricity meter","kwh","prepaid electricity"])){routes.push(ROUTES.ELECTRICITY);reasons.push("electricity language");confidence=Math.max(confidence,.9);}const unique=[...new Set(routes)];if(!unique.length||confidence<.6)return{routes:[ROUTES.REVIEW],confidence,reasons:reasons.length?reasons:["no sufficiently confident route"]};return{routes:unique,confidence,reasons};}
 export function buildRecord(input,now=new Date()){const payload=normalisePayload(input);const source_id=fingerprint(payload);const routing=classify(payload);return{source_id,source_type:payload.source_type,received_at:now.toISOString(),source_chat:payload.source_chat,sender:payload.sender,source_timestamp:payload.source_timestamp,content_types:payload.content_types,raw_evidence_ref:payload.raw_evidence_ref,text:payload.text,attachments:payload.attachments,extracted:{},routes:routing.routes,confidence:routing.confidence,routing_reasons:routing.reasons,status:routing.routes.includes(ROUTES.REVIEW)?"needs_review":"routed"};}
+
+export function extractElectricityReading(input={}) {
+  const explicit = Number(input.reading_kwh ?? input.meter_reading ?? input.reading);
+  if (Number.isFinite(explicit) && explicit >= 0 && explicit <= 999.99) {
+    return {reading_kwh:Number(explicit.toFixed(2)),confidence:.99,source:"explicit"};
+  }
+  const t=String(input.text??"");
+  const matches=[...t.matchAll(/(?:^|[^\d])(\d{1,3}[\.,]\d{1,2})(?=$|[^\d])/g)]
+    .map(m=>Number(m[1].replace(",",".")))
+    .filter(n=>Number.isFinite(n)&&n>=0&&n<=999.99);
+  if(matches.length===1)return{reading_kwh:Number(matches[0].toFixed(2)),confidence:.9,source:"text_decimal"};
+  return{reading_kwh:null,confidence:0,source:"unresolved"};
+}
+
+export function buildElectricityReading(input={},previousReading=null,now=new Date()){
+  const parsed=extractElectricityReading(input);
+  const evidence_ref=input.raw_evidence_ref||input.evidence_ref||null;
+  const reading_at=input.source_timestamp||input.reading_at||now.toISOString();
+  const previous=Number(previousReading);
+  let usage_kwh=null;
+  let anomaly=null;
+  if(parsed.reading_kwh===null){
+    anomaly="reading_unresolved";
+  }else if(Number.isFinite(previous)){
+    usage_kwh=Number((previous-parsed.reading_kwh).toFixed(2));
+    if(usage_kwh<0) anomaly="reading_increased";
+    else if(usage_kwh>100) anomaly="usage_spike";
+  }
+  return{
+    reading_kwh:parsed.reading_kwh,
+    reading_at,
+    previous_reading_kwh:Number.isFinite(previous)?previous:null,
+    usage_kwh,
+    evidence_ref,
+    extraction_confidence:parsed.confidence,
+    extraction_source:parsed.source,
+    status:anomaly?"needs_review":"logged",
+    anomaly
+  };
+}
