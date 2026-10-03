@@ -47,7 +47,7 @@ jobs:
       - name: Run authenticated live Intake acceptance
         run: |
           set -euo pipefail
-          body=$(curl --fail --silent --show-error "https://deploy-preview-1--familyroy-intake.netlify.app/acceptance")
+          body=$(curl --fail --silent --show-error "$NETLIFY_PREVIEW_URL/acceptance")
           echo "$body" > /tmp/live-acceptance.json
           python - <<'PY'
           import json
@@ -60,6 +60,21 @@ jobs:
           assert names["Duplicate ingestion"]["pass"]
           assert names["PNPS multi-route"]["pass"]
           assert names["Scoped handoff redeem → ack → partial duplicate recovery"]["pass"]
+          PY
+      - name: Inspect latest electricity reading
+        run: |
+          set -euo pipefail
+          body=$(curl --fail --silent --show-error "$NETLIFY_PREVIEW_URL/electricity-latest")
+          echo "ELECTRICITY_LATEST=$body"
+          echo "$body" > /tmp/electricity-latest.json
+          python - <<'PY'
+          import json
+          x=json.load(open("/tmp/electricity-latest.json"))
+          assert x.get("ok") is True, x
+          latest=x.get("latest")
+          if latest is not None:
+              assert isinstance(latest.get("reading_kwh"), (int,float)), latest
+              assert latest.get("status") in ("logged","needs_review"), latest
           PY
       - name: Verify live Control Centre QA receiver
         run: |
@@ -110,7 +125,7 @@ jobs:
             -H "Origin: https://santsbabe.github.io" \
             -H "Access-Control-Request-Method: GET" \
             -H "Access-Control-Request-Headers: authorization" \
-            "https://deploy-preview-1--familyroy-intake.netlify.app/handoff"
+            "$NETLIFY_PREVIEW_URL/handoff"
           grep -qi '^HTTP/.* 204' "$h"
           grep -qi '^access-control-allow-origin: https://santsbabe.github.io' "$h"
           grep -qi '^access-control-allow-headers: .*authorization' "$h"
@@ -122,13 +137,13 @@ jobs:
             -H "Origin: https://deploy-preview-23--homework-quest-parent-console.netlify.app" \
             -H "Access-Control-Request-Method: GET" \
             -H "Access-Control-Request-Headers: authorization" \
-            "https://deploy-preview-1--familyroy-intake.netlify.app/handoff"
+            "$NETLIFY_PREVIEW_URL/handoff"
           grep -qi '^HTTP/.* 204' "$h"
           grep -qi '^access-control-allow-origin: https://deploy-preview-23--homework-quest-parent-console.netlify.app' "$h"
       - name: Reject unsupported handoff method without capability processing
         run: |
           code=$(curl --silent --show-error -o /dev/null -w "%{http_code}" -X DELETE \
-            "https://deploy-preview-1--familyroy-intake.netlify.app/handoff")
+            "$NETLIFY_PREVIEW_URL/handoff")
           test "$code" = 405
       - name: Reject unconfigured CORS origin
         run: |
@@ -136,5 +151,5 @@ jobs:
             -H "Origin: https://evil.example" \
             -H "Access-Control-Request-Method: GET" \
             -H "Access-Control-Request-Headers: authorization" \
-            "https://deploy-preview-1--familyroy-intake.netlify.app/handoff")
+            "$NETLIFY_PREVIEW_URL/handoff")
           test "$code" = 403
