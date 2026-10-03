@@ -36,10 +36,12 @@ export function extractElectricityReading(input={}) {
     return{reading_kwh:Number(explicit.toFixed(2)),confidence:.99,source:"explicit"};
   }
   const t=String(input.text??"");
-  const matches=[...t.matchAll(/(?:^|[^\d])(\d{1,3}[\.,]\d{1,2})(?=$|[^\d])/g)]
+  const decimalMatches=[...t.matchAll(/(?:^|[^\d])(\d{1,3}[\.,]\d{1,2})(?=$|[^\d])/g)]
     .map(m=>Number(m[1].replace(",",".")))
     .filter(n=>Number.isFinite(n)&&n>=0&&n<=999.99);
-  if(matches.length===1)return{reading_kwh:Number(matches[0].toFixed(2)),confidence:.9,source:"ocr_text_decimal"};
+  if(decimalMatches.length===1)return{reading_kwh:Number(decimalMatches[0].toFixed(2)),confidence:.9,source:"ocr_text_decimal"};
+  const compactMatches=t.split(/\r?\n/).map(s=>s.trim()).filter(s=>/^\d{5}$/.test(s)).map(s=>Number(s)/100);
+  if(compactMatches.length===1)return{reading_kwh:Number(compactMatches[0].toFixed(2)),confidence:.88,source:"ocr_compact_hundredths"};
   return{reading_kwh:null,confidence:0,source:"unresolved"};
 }
 
