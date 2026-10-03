@@ -21,7 +21,7 @@ export default async(req:Request)=>{if(req.method!=="POST")return new Response("
   if(reading.status==="needs_review")record.status="needs_review";
 }
 await store.setJSON(key,record);
-if(record.routes.includes(ROUTES.ELECTRICITY)&&record.extracted?.electricity?.reading_kwh!==null){
+if(record.routes.includes(ROUTES.ELECTRICITY)&&record.extracted?.electricity?.reading_kwh!==null&&!prepared.client_context?.qa){
   const reading=record.extracted.electricity;
   const safeTimestamp=String(reading.reading_at).replace(/[:]/g,"-");
   await store.setJSON(`electricity/readings/${safeTimestamp}-${record.source_id}.json`,{source_id:record.source_id,...reading});
