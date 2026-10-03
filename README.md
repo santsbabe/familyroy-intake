@@ -55,3 +55,7 @@ Synthetic browser-acceptance functions are preview-only and return 404 in produc
 The current iPhone contract is intentionally minimal: use the existing working Intake request, read `primary_action.launch_url`, and open it only when present. The server constructs the destination URL and keeps the scoped capability in the URL fragment. The Shortcut does not implement routing or capability construction.
 
 Queued means queued, not delivered: Calendar and other destinations remain explicit outbox work until a consumer exists.
+
+
+## Electricity meter-photo preview
+The preview intake accepts `source_type: electricity_meter_photo`, OCR text and image evidence. It routes to `control_centre.electricity`, extracts a plausible decimal reading, compares it with the last logged countdown reading, calculates usage, and sends ambiguous or anomalous readings to review. This remains preview-only until explicitly approved for production.
