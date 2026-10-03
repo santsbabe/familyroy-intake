@@ -61,6 +61,11 @@ jobs:
           assert names["PNPS multi-route"]["pass"]
           assert names["Scoped handoff redeem → ack → partial duplicate recovery"]["pass"]
           PY
+      - name: Recover confirmed meter readings
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error "$NETLIFY_PREVIEW_URL/electricity-recover-confirmed"
+          echo
       - name: Inspect latest electricity reading
         run: |
           set -euo pipefail
