@@ -22,7 +22,7 @@ jobs:
       - name: Wait for deploy preview health
         run: |
           set -euo pipefail
-          base="https://deploy-preview-1--familyroy-intake.netlify.app"
+          base="$NETLIFY_PREVIEW_URL"
           for i in {1..18}; do
             if curl --fail --silent --show-error "$base/health" | grep -q '"ok":true'; then break; fi
             if [ "$i" = 18 ]; then echo "Preview did not become healthy"; exit 1; fi
@@ -31,7 +31,7 @@ jobs:
       - name: Run public preview acceptance page
         run: |
           set -euo pipefail
-          base="https://deploy-preview-1--familyroy-intake.netlify.app"
+          base="$NETLIFY_PREVIEW_URL"
           for i in {1..18}; do
             code=$(curl --silent --show-error -o /tmp/acceptance.html -w "%{http_code}" "$base/acceptance-results")
             if [ "$code" = 200 ] && grep -q "ROUTER TESTS PASSED" /tmp/acceptance.html; then exit 0; fi
@@ -70,7 +70,7 @@ jobs:
       - name: Complete synthetic handoff through real Control Centre browser
         run: |
           set -euo pipefail
-          base="https://deploy-preview-1--familyroy-intake.netlify.app"
+          base="$NETLIFY_PREVIEW_URL"
           probe=$(curl --fail --silent --show-error "$base/browser-acceptance")
           launch=$(echo "$probe" | jq -r '.launch_url')
           source_id=$(echo "$probe" | jq -r '.source_id')
