@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Inbox Unsubscribe Sweep</title>
+<style>
+:root{color-scheme:light dark;--bg:#fff;--card:#f6f7f8;--text:#171717;--muted:#666;--border:#d8d8d8;--accent:#0a7a42}
+@media(prefers-color-scheme:dark){:root{--bg:#111;--card:#1b1b1b;--text:#f5f5f5;--muted:#aaa;--border:#3a3a3a;--accent:#55c987}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:22px 16px 44px}h1{font-size:28px;line-height:1.15;margin:0 0 10px}
+.intro{color:var(--muted);line-height:1.45;margin:0 0 18px}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:12px 0}
+.card h2{font-size:17px;margin:0 0 4px}.card p{color:var(--muted);font-size:14px;line-height:1.35;margin:0 0 12px}.choices{display:grid;gap:8px}
+.choice{display:flex;align-items:center;gap:10px;min-height:50px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.choice input{width:22px;height:22px;flex:0 0 22px;accent-color:var(--accent)}.choice span{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.choice small{color:var(--muted)}
+button{width:100%;min-height:58px;border:0;border-radius:14px;background:var(--accent);color:#fff;font:inherit;font-size:18px;font-weight:750;padding:12px 16px;margin-top:18px}
+.note{color:var(--muted);font-size:13px;line-height:1.4;margin:10px 0 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Inbox unsubscribe sweep</h1>
+<p class="intro"><strong>All 13 are preselected as Unsubscribe + delete.</strong> Tap only the exceptions you want to change, then tap <strong>Submit choices</strong>. Your answers will be saved directly for me to read — no email, typing or screenshot needed.</p>
+
+<form name="inbox-unsubscribe-sweep" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/unsubscribe-sweep-success.html">
+<input type="hidden" name="form-name" value="inbox-unsubscribe-sweep">
+<p style="display:none"><label>Don’t fill this out: <input name="bot-field"></label></p>
+<input type="hidden" name="scope" value="Last 3 months promotional cleanup">
+<section class="card">
+<h2>1. TECH / techtitute</h2><p>Generic degrees, certificates and course marketing.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="tech" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="tech" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="tech" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>2. LEGO Certified Store marketing</h2><p>Sales, double-points, product launches and promos.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="lego" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="lego" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="lego" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>3. Mr D marketing</h2><p>Promotional food/retail mail only; order receipts stay.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="mrd" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="mrd" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="mrd" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>4. Clicks Customer Community</h2><p>Surveys and feedback mail only; Clicks transactional mail stays.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="clicks" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="clicks" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="clicks" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>5. Elicit marketing</h2><p>Product updates/tutorials only; account/security mail stays.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="elicit" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="elicit" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="elicit" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>6. Shell Recruitment</h2><p>Generic CV/database recruitment marketing.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="shell" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="shell" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="shell" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>7. Matchtech</h2><p>Generic procurement/supply-chain recruiter outreach.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="matchtech" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="matchtech" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="matchtech" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>8. BMI webinars</h2><p>Webinar/event invitations and reminders.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="bmi" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="bmi" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="bmi" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>9. The Baxter newsletters</h2><p>What's On and subscriber promotions.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="baxter" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="baxter" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="baxter" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>10. Identipet Marketing</h2><p>Marketing only; pet registration/account alerts stay.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="identipet" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="identipet" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="identipet" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>11. Takealot review requests</h2><p>Review-for-voucher emails only; orders/deliveries stay.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="takealot" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="takealot" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="takealot" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>12. Courier Guy surveys</h2><p>Feedback surveys only; delivery notices stay.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="courier" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="courier" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="courier" value="Keep"><span>Keep</span></label>
+</div></section>
+<section class="card">
+<h2>13. WikiTree newsletters</h2><p>Genealogy digests/newsletters.</p>
+<div class="choices">
+<label class="choice"><input type="radio" name="wikitree" value="Unsubscribe + delete" checked required><span><strong>Unsubscribe + delete</strong> <small>Default</small></span></label>
+<label class="choice"><input type="radio" name="wikitree" value="Delete only"><span>Delete only</span></label>
+<label class="choice"><input type="radio" name="wikitree" value="Keep"><span>Keep</span></label>
+</div></section>
+<button type="submit">Submit choices</button>
+<p class="note">This is a preview-only FamilyRoy form. Submitting stores only these questionnaire choices in Netlify Forms so I can implement them.</p>
+</form>
+</main>
+</body>
+</html>
