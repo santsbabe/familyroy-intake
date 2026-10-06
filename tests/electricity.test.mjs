@@ -1,0 +1,10 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {electricityCandidate,usageInterval,electricityDecision} from "../netlify/functions/electricity-core.mjs";
+const source="c".repeat(64);
+test("numeric reading is parsed",()=>{assert.equal(electricityCandidate({text:"Meter reading 12345.6 kWh"}).reading,12345.6);});
+test("missing reading stays reviewable",()=>{assert.equal(electricityCandidate({text:"electricity meter"}).needs_confirmation,true);});
+test("usage interval uses increasing readings",()=>{assert.equal(usageInterval({reading:100},{reading:107.5}).usage_kwh,7.5);});
+test("decreasing reading is rejected",()=>{assert.equal(usageInterval({reading:107},{reading:100}),null);});
+test("confirmed reading is accepted",()=>{assert.equal(electricityDecision(source,{reading:123},"confirm").state,"confirmed");});
+test("missing reading cannot commit",()=>{assert.equal(electricityDecision(source,{reading:null},"confirm").ok,false);});
