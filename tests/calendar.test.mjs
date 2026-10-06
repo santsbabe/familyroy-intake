@@ -1,0 +1,11 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {resolveCalendarCandidate,calendarDedupeKey} from "../netlify/functions/calendar-core.mjs";
+const ref=new Date("2026-10-06T12:00:00+02:00");
+test("explicit dated timed candidate is ready with two alerts",()=>{const x=resolveCalendarCandidate({title:"Sports day",date_text:"23 October 2026",time_text:"17:30"},ref);assert.equal(x.status,"ready");assert.equal(x.start_local,"2026-10-23T17:30:00");assert.deepEqual(x.alerts,[{offset_minutes:-1440},{offset_minutes:-60}]);});
+test("explicit all-day candidate gets day-before and morning alerts",()=>{const x=resolveCalendarCandidate({title:"Book day",date_text:"23 October 2026"},ref);assert.equal(x.status,"ready");assert.equal(x.all_day,true);assert.deepEqual(x.alerts,[{offset_minutes:-1440},{offset_minutes:-540}]);});
+test("weekday candidate resolves for preview but requires confirmation",()=>{const x=resolveCalendarCandidate({title:"Bring library bag",date_text:"Friday"},ref);assert.equal(x.status,"needs_confirmation");assert.equal(x.reason,"relative_weekday");assert.equal(x.start_local,"2026-10-09T00:00:00");assert.deepEqual(x.alerts,[]);});
+test("tomorrow candidate never silently becomes a committed event",()=>{const x=resolveCalendarCandidate({title:"Return form",date_text:"tomorrow",time_text:"08:00"},ref);assert.equal(x.status,"needs_confirmation");assert.equal(x.reason,"relative_tomorrow");assert.deepEqual(x.alerts,[]);});
+test("yearless date is resolved only as a confirmation candidate",()=>{const x=resolveCalendarCandidate({title:"Photo day",date_text:"23 October",time_text:"08:00"},ref);assert.equal(x.status,"needs_confirmation");assert.equal(x.reason,"year_inferred");assert.equal(x.start_local,"2026-10-23T08:00:00");});
+test("unresolved candidate stays safe",()=>{const x=resolveCalendarCandidate({title:"School thing"},ref);assert.equal(x.status,"needs_confirmation");assert.equal(x.reason,"unresolved_date");assert.deepEqual(x.alerts,[]);});
+test("calendar dedupe key is stable per source/date/time",()=>{const a=calendarDedupeKey("abc",{date_text:"23 October 2026",time_text:"17:30"});assert.equal(a,calendarDedupeKey("abc",{date_text:"23 October 2026",time_text:"17:30"}));assert.notEqual(a,calendarDedupeKey("abc",{date_text:"23 October 2026",time_text:"18:00"}));});
