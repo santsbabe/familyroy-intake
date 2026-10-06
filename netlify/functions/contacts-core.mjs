@@ -15,3 +15,21 @@ export function contactDecision(sourceId,candidate,decision,edits={}){
  const c={...candidate,...edits};if(!c.name&&!c.phone)return{ok:false,error:"missing_identity"};if(!c.service)return{ok:false,error:"missing_service"};
  return{ok:true,state:"confirmed",source_id:sourceId,dedupe_key:contactsDedupeKey(sourceId,c),contact:{name:c.name||null,phone:c.phone||null,service:c.service,notes:c.notes||"",source_chat:c.source_chat||null,source_timestamp:c.source_timestamp||null,evidence:c.evidence||[]}};
 }
+
+function norm(v){return String(v||"").toLowerCase().replace(/[^a-z0-9+]/g,"");}
+export function contactIdentity(candidate={}){return norm(candidate.phone)||norm(candidate.name);}
+export function findContactMatch(candidate={},existing=[]){
+ const id=contactIdentity(candidate);if(!id)return{match:null,reason:"no_identity"};
+ const exact=existing.find(x=>contactIdentity(x)===id);if(exact)return{match:exact,reason:candidate.phone?"same_phone":"same_name"};
+ return{match:null,reason:"no_match"};
+}
+export function mergeContact(existing={},incoming={}){
+ const services=[...new Set([...(existing.services||[existing.service].filter(Boolean)),...(incoming.services||[incoming.service].filter(Boolean))].map(x=>String(x).toLowerCase()))];
+ const sources=[...new Set([...(existing.source_ids||[]),...(incoming.source_id?[incoming.source_id]:[])])];
+ return{...existing,name:existing.name||incoming.name||null,phone:existing.phone||incoming.phone||null,services,notes:[existing.notes,incoming.notes].filter(Boolean).join("\n---\n"),source_ids:sources,evidence:[...(existing.evidence||[]),...(incoming.evidence||[])]};
+}
+export function upsertContact(directory=[],incoming={}){
+ const {match,reason}=findContactMatch(incoming,directory);
+ if(!match)return{action:"create",reason,contact:mergeContact({},incoming),directory:[...directory,mergeContact({},incoming)]};
+ const merged=mergeContact(match,incoming);return{action:"merge",reason,contact:merged,directory:directory.map(x=>x===match?merged:x)};
+}
