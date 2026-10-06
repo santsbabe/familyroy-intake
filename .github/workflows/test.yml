@@ -2,7 +2,6 @@ name: FamilyRoy Intake tests
 on:
   pull_request:
   push:
-    branches: ["preview/**", "integration/**"]
 jobs:
   test:
     runs-on: ubuntu-latest
