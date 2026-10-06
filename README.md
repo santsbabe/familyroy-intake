@@ -52,6 +52,10 @@ The preview branch is guarded by unit/regression tests, a Netlify-function compi
 
 Synthetic browser-acceptance functions are preview-only and return 404 in production for all tested methods. They only create tagged synthetic PNPS evidence; the status probe refuses non-synthetic source IDs.
 
-The current iPhone contract is intentionally minimal: use the existing working Intake request, read `primary_action.launch_url`, and open it only when present. The server constructs the destination URL and keeps the scoped capability in the URL fragment. The Shortcut does not implement routing or capability construction.
+The current iPhone contract is intentionally minimal: use the existing working Intake request, read the top-level `launch_url`, and open it only when present. The nested `primary_action.launch_url` remains available for structured clients, but iOS Shortcuts should use the top-level value. The server constructs the destination URL and keeps the scoped capability in the URL fragment. The Shortcut does not implement routing or capability construction.
 
 Queued means queued, not delivered: Calendar and other destinations remain explicit outbox work until a consumer exists.
+
+
+### Real-device acceptance
+On 6 October 2026 the existing **Send to FamilyRoy** iPhone Share Sheet shortcut passed the mixed PNPS acceptance case (`Alexander homework is revise klanke. Bring library bag on Friday.`): Intake returned Homework Quest + School Readiness ready / Calendar queued, the top-level `launch_url` was present, iOS handed the URL to the user's default browser (Chrome) after the user granted the Shortcut permission, and the public Control Centre QA page redeemed, ingested and rendered the School Readiness item. Browser choice is therefore not part of the server contract; the Shortcut uses iOS `Open URLs` and the user's browser association/permission.
