@@ -1,0 +1,13 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {contactCandidate,contactsDedupeKey,contactDecision} from "../netlify/functions/contacts-core.mjs";
+import {buildRecord,ROUTES} from "../netlify/functions/core.mjs";
+const source="a".repeat(64);
+test("contact candidate extracts service without inventing identity",()=>{const c=contactCandidate({text:"Can recommend a great plumber"});assert.equal(c.service,"plumber");assert.equal(c.name,null);assert.equal(c.needs_confirmation,true);});
+test("contact candidate preserves provenance",()=>{const c=contactCandidate({text:"Recommend Chelsea Cleaning",source_chat:"Neighbourhood group",sender:"Neighbour",source_timestamp:"2026-10-06T10:00:00+02:00",evidence:[{sha256:"abc"}]});assert.equal(c.service,"cleaning");assert.equal(c.source_chat,"Neighbourhood group");assert.equal(c.evidence[0].sha256,"abc");});
+test("under-specified recommendation requires confirmation",()=>{const c=contactCandidate({text:"I recommend Sarah"});assert.equal(c.needs_confirmation,true);});
+test("confirmed contact requires identity and service",()=>{const d=contactDecision(source,{name:"Sarah",service:"plumber",notes:"recommended"},"confirm");assert.equal(d.state,"confirmed");assert.equal(d.contact.name,"Sarah");assert.equal(d.contact.service,"plumber");});
+test("missing service cannot be silently committed",()=>{const d=contactDecision(source,{name:"Sarah",notes:"recommended"},"confirm");assert.equal(d.ok,false);assert.equal(d.error,"missing_service");});
+test("reject is terminal without creating contact",()=>{const d=contactDecision(source,{name:"Sarah"},"reject");assert.equal(d.state,"rejected");assert.equal(d.contact,undefined);});
+test("contact dedupe is stable",()=>{const c={name:"Sarah",service:"plumber"};assert.equal(contactsDedupeKey(source,c),contactsDedupeKey(source,c));});
+test("Contacts route gets structured candidate while Repairs remains independent",()=>{const r=buildRecord({source_chat:"Neighbourhood group",text:"Recommend Sarah the plumber to fix the leak"});assert.ok(r.routes.includes(ROUTES.CONTACTS));assert.ok(r.routes.includes(ROUTES.REPAIRS));assert.equal(r.route_payloads[ROUTES.CONTACTS].mode,"contact_candidate");assert.equal(r.route_payloads[ROUTES.CONTACTS].contact_candidate.service,"plumber");assert.equal(r.route_payloads[ROUTES.REPAIRS].mode,"domain_intake");});
