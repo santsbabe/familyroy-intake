@@ -1,0 +1,12 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {repairCandidate,repairDedupeKey,linkRepairToContact,repairDecision} from "../netlify/functions/repairs-core.mjs";
+import {buildRecord,ROUTES} from "../netlify/functions/core.mjs";
+const source="b".repeat(64);
+test("repair candidate recognises problem and service",()=>{const r=repairCandidate({text:"Recommend Sarah the plumber to fix the kitchen leak"});assert.equal(r.problem_detected,true);assert.equal(r.service,"plumber");assert.equal(r.needs_confirmation,false);});
+test("urgent language is retained as triage metadata",()=>{const r=repairCandidate({text:"Urgent burst pipe, need plumber today"});assert.equal(r.urgent,true);});
+test("provider recommendation without an actual repair remains confirmation-required",()=>{const r=repairCandidate({text:"Sarah is a great plumber"});assert.equal(r.problem_detected,false);assert.equal(r.needs_confirmation,true);});
+test("confirmed contact can be linked without merging records",()=>{const repair=repairCandidate({text:"Fix kitchen leak"}),linked=linkRepairToContact(repair,{state:"confirmed",source_id:source,contact:{name:"Sarah",service:"plumber"}});assert.equal(linked.linked_contact_source_id,source);assert.equal(linked.provider.name,"Sarah");});
+test("unconfirmed contact is never linked",()=>{const linked=linkRepairToContact(repairCandidate({text:"Fix leak"}),{state:"rejected",source_id:source});assert.equal(linked.linked_contact_source_id,null);});
+test("repair decision has stable source-level dedupe",()=>{const d=repairDecision(source,repairCandidate({text:"Fix the broken tap"}),"confirm");assert.equal(d.state,"confirmed");assert.equal(d.dedupe_key,repairDedupeKey(source));});
+test("router emits separate structured Contact and Repair candidates",()=>{const r=buildRecord({source_chat:"Neighbourhood group",text:"Recommend Sarah the plumber to fix the leak"});assert.equal(r.route_payloads[ROUTES.CONTACTS].mode,"contact_candidate");assert.equal(r.route_payloads[ROUTES.REPAIRS].mode,"repair_candidate");assert.equal(r.route_payloads[ROUTES.REPAIRS].repair_candidate.problem_detected,true);});
