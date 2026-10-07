@@ -82,8 +82,8 @@ function ingestSchoolMail() {
         if (intakeResult.status !== "awaiting_enrichment") continue;
 
         for (const canvaUrl of urls) {
-          const capture = capturePublicCanva_(intakeUrl, token, canvaUrl);
-          if (!capture || capture.usable) continue;
+          const capture = captureAuthoritativeCanva_(intakeUrl, token, intakeResult.source_id, canvaUrl);
+          if (capture && capture.ok) continue;
 
           if (Date.now() - message.getDate().getTime() > 24 * 60 * 60 * 1000) {
             reportCanvaFailure_(
@@ -195,14 +195,13 @@ function postJson_(url, token, payload) {
   };
 }
 
-function capturePublicCanva_(intakeUrl, token, canvaUrl) {
+function captureAuthoritativeCanva_(intakeUrl, token, sourceId, canvaUrl) {
   try {
-    const endpoint = intakeUrl.replace(/\/intake\/?$/, "/canva-public");
-    const result = postJson_(endpoint, token, { url: canvaUrl });
-    if (!result.ok) return result.json || { usable: false, error: "public_probe_failed_" + result.status };
-    return result.json;
+    const endpoint = intakeUrl.replace(/\/intake\/?$/, "/canva/capture");
+    const result = postJson_(endpoint, token, { source_id: sourceId, original_url: canvaUrl });
+    return result.json || { ok: false, error: "canva_capture_failed_" + result.status };
   } catch (err) {
-    console.error("Public Canva probe failed", canvaUrl, err);
+    console.error("Authoritative Canva capture failed", canvaUrl, err);
     return null;
   }
 }
