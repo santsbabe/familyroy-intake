@@ -78,22 +78,33 @@ function ingestSchoolMail() {
         }
 
         const intakeResult = response.json || {};
-        getOrCreateLabel_(schoolQuery.capturedLabel).addToThread(thread);
-        if (intakeResult.status !== "awaiting_enrichment") continue;
+        if (intakeResult.status !== "awaiting_enrichment") {
+          getOrCreateLabel_(schoolQuery.capturedLabel).addToThread(thread);
+          continue;
+        }
 
+        let allCaptured = true;
+        let terminalFailure = false;
         for (const canvaUrl of urls) {
           const capture = captureAuthoritativeCanva_(intakeUrl, token, intakeResult.source_id, canvaUrl);
           if (capture && capture.ok) continue;
 
-          if (Date.now() - message.getDate().getTime() > 24 * 60 * 60 * 1000) {
-            reportCanvaFailure_(
-              intakeUrl,
-              token,
-              payload,
-              canvaUrl,
-              capture && capture.error ? capture.error : "authoritative_canva_capture_missing_after_24h"
-            );
+          allCaptured = false;
+          const reason = capture && capture.error ? capture.error : "authoritative_canva_capture_missing";
+          if (
+            Date.now() - message.getDate().getTime() > 24 * 60 * 60 * 1000 &&
+            !isRetriableCanvaError_(reason)
+          ) {
+            reportCanvaFailure_(intakeUrl, token, payload, canvaUrl, reason);
+            terminalFailure = true;
           }
+        }
+
+        // Only remove this Gmail thread from future polling once enrichment is complete
+        // or a non-retriable failure has been recorded. OAuth/configuration failures remain
+        // unlabelled so the next scheduled run can recover automatically after connection.
+        if (allCaptured || terminalFailure) {
+          getOrCreateLabel_(schoolQuery.capturedLabel).addToThread(thread);
         }
       } catch (err) {
         console.error("FamilyRoy intake exception", message.getId(), err);
@@ -204,6 +215,15 @@ function captureAuthoritativeCanva_(intakeUrl, token, sourceId, canvaUrl) {
     console.error("Authoritative Canva capture failed", canvaUrl, err);
     return null;
   }
+}
+
+function isRetriableCanvaError_(reason) {
+  return [
+    "canva_mcp_not_connected",
+    "canva_mcp_reauth_required",
+    "canva_mcp_client_not_configured",
+    "missing_canva_mcp_client_id"
+  ].includes(String(reason || ""));
 }
 
 function reportCanvaFailure_(intakeUrl, token, payload, canvaUrl, reason) {
