@@ -1,1 +1,14 @@
-{"name":"familyroy-intake","version":"0.1.0","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.mjs"},"dependencies":{"@netlify/blobs":"latest","@netlify/functions":"latest"}}
+{
+  "name": "familyroy-intake",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "latest",
+    "@netlify/functions": "latest",
+    "@modelcontextprotocol/client": "latest"
+  }
+}
