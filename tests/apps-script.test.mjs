@@ -16,11 +16,23 @@ test("school source is archived before it is posted to intake",()=>{
   assert.ok(archiveAt<postAt);
 });
 
-test("captured school sources are labelled out of future Gmail polling",()=>{
+test("completed school sources are labelled out of future Gmail polling",()=>{
   assert.match(source,/SCHOOL_CAPTURED_LABEL/);
   assert.match(source,/SCHOOL_NEWSLETTER_GMAIL_QUERY/);
   assert.match(source,/-label:/);
+  assert.match(source,/allCaptured \|\| terminalFailure/);
   assert.match(source,/addToThread\(thread\)/);
+});
+
+test("retriable Canva auth failures remain eligible for the next scheduled poll",()=>{
+  assert.match(source,/isRetriableCanvaError_/);
+  assert.match(source,/canva_mcp_not_connected/);
+  assert.match(source,/canva_mcp_reauth_required/);
+  assert.match(source,/canva_mcp_client_not_configured/);
+  const labelAfterIntake=source.indexOf("const intakeResult = response.json || {};");
+  const retryDecision=source.indexOf("if (allCaptured || terminalFailure)");
+  assert.ok(labelAfterIntake>=0);
+  assert.ok(retryDecision>labelAfterIntake);
 });
 
 test("Apps Script uses authoritative Canva capture and never public HTML as content",()=>{
