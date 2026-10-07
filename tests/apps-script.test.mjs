@@ -17,13 +17,15 @@ test("school source is archived before it is posted to intake",()=>{
 });
 
 test("captured school sources are labelled out of future Gmail polling",()=>{
-  assert.match(source,/FamilyRoy\/School Source Captured/);
+  assert.match(source,/SCHOOL_CAPTURED_LABEL/);
+  assert.match(source,/SCHOOL_NEWSLETTER_GMAIL_QUERY/);
   assert.match(source,/-label:/);
   assert.match(source,/addToThread\(thread\)/);
 });
 
-test("Apps Script keeps Canva public HTML diagnostic-only",()=>{
-  assert.match(source,/Authoritative/);
-  assert.match(source,/public probe/i);
+test("Apps Script uses authoritative Canva capture and never public HTML as content",()=>{
+  assert.match(source,/\/canva\/capture/);
+  assert.match(source,/Authoritative Canva capture failed/);
+  assert.doesNotMatch(source,/\/canva-public/);
   assert.doesNotMatch(source,/capture_method:\s*"public_html"/);
 });
