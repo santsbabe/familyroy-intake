@@ -23,7 +23,10 @@ test("captured school sources are labelled out of future Gmail polling",()=>{
 });
 
 test("Apps Script keeps Canva public HTML diagnostic-only",()=>{
-  assert.match(source,/Authoritative/);
-  assert.match(source,/public probe/i);
-  assert.doesNotMatch(source,/capture_method:\s*"public_html"/);
+  assert.match(source,/function captureAuthoritativeCanva_\s*\(/);
+  assert.match(source,/\/canva\/capture/);
+  assert.match(source,/postJson_\(endpoint, token, \{ source_id: sourceId, original_url: canvaUrl \}\)/);
+  assert.match(source,/function reportCanvaFailure_\s*\(/);
+  assert.match(source,/canva_failures:\s*\[/);
+  assert.doesNotMatch(source,/capture_method:\s*["']public_html["']/);
 });
