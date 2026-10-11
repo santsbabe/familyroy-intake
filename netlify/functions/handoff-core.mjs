@@ -26,3 +26,5 @@ export function canAcknowledge(record,sourceId,now=Date.now()){const state=hando
 export function preflightOriginAllowed(origin,env={}){const o=String(origin||"");if(!o)return false;return["FAMILYROY_CONTROL_CENTRE_ORIGIN","FAMILYROY_HOMEWORK_ORIGIN"].some(k=>String(env[k]||"")===o);}
 
 export function extractHandoffToken(header=""){return String(header||"").replace(/^Handoff\s+/i,"");}
+
+export function validateAckRequest(record,body){if(body?.acknowledge!==true)return{ok:false,error:"acknowledgement_required"};if(String(body?.source_id||"")!==String(record?.source_id||""))return{ok:false,error:"source_mismatch"};return{ok:true};}

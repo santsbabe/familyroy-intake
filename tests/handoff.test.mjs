@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {HANDOFF_TTL_MS,newCapability,validCapability,tokenHash,handoffKey,createHandoffRecord,handoffState,allowedOrigin,canAcknowledge,preflightOriginAllowed,extractHandoffToken} from "../netlify/functions/handoff-core.mjs";
+import {HANDOFF_TTL_MS,newCapability,validCapability,tokenHash,handoffKey,createHandoffRecord,handoffState,allowedOrigin,canAcknowledge,preflightOriginAllowed,extractHandoffToken,validateAckRequest} from "../netlify/functions/handoff-core.mjs";
 
 test("handoff capabilities are high entropy and URL safe",()=>{const a=newCapability(),b=newCapability();assert.equal(a.length,43);assert.ok(validCapability(a));assert.notEqual(a,b);assert.notEqual(tokenHash(a),a);});
 test("handoff storage key never contains plaintext capability",()=>{const t=newCapability(),k=handoffKey(t);assert.ok(k.startsWith("handoffs/"));assert.ok(!k.includes(t));assert.match(k,/^handoffs\/[a-f0-9]{64}\.json$/);});
@@ -18,3 +18,5 @@ test("Handoff authorization parser strips scheme and whitespace",()=>{const toke
 
 test("acknowledged handoff remains idempotent but never accepts a different source",()=>{const token=newCapability(),source="c".repeat(64),r=createHandoffRecord({token,route:"control_centre.school_readiness",source_id:source,now:1000,ttlMs:10});r.status="acknowledged";assert.deepEqual(canAcknowledge(r,source,999999),{ok:true,duplicate:true});assert.deepEqual(canAcknowledge(r,"d".repeat(64),999999),{ok:false,error:"source_mismatch"});});
 test("empty or foreign authorization schemes never become valid capabilities",()=>{const token=newCapability();assert.equal(validCapability(extractHandoffToken("")),false);assert.equal(validCapability(extractHandoffToken("Bearer "+token)),false);assert.equal(validCapability(extractHandoffToken("Handoff nope")),false);});
+
+test("duplicate acknowledged POST still requires positive intent and exact source",()=>{const source="a".repeat(64),r={source_id:source,status:"acknowledged"};assert.deepEqual(validateAckRequest(r,{acknowledge:true,source_id:source}),{ok:true});assert.deepEqual(validateAckRequest(r,{acknowledge:true,source_id:"b".repeat(64)}),{ok:false,error:"source_mismatch"});assert.deepEqual(validateAckRequest(r,{source_id:source}),{ok:false,error:"acknowledgement_required"});});

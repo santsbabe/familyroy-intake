@@ -8,7 +8,7 @@ export function electricityCandidate(payload={}){
 export function electricityDedupeKey(sourceId){return `${sourceId}:electricity`;}
 export function usageInterval(previous,current){
  if(previous?.reading==null||current?.reading==null)return null;
- const delta=Number(current.reading)-Number(previous.reading);if(!Number.isFinite(delta)||delta<0)return null;
+ const delta=Number(previous.reading)-Number(current.reading);if(!Number.isFinite(delta)||delta<0)return null;
  return{from:previous.captured_at||null,to:current.captured_at||null,usage_kwh:delta,needs_attribution:true};
 }
 export function electricityDecision(sourceId,candidate,decision,edits={}){

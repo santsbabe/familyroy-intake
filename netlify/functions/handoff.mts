@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { getStore,getDeployStore } from "@netlify/blobs";
 import { timingSafeEqual } from "node:crypto";
 import { ROUTES } from "./core.mjs";
-import { newCapability,handoffKey,createHandoffRecord,handoffState,validCapability,allowedOrigin,canAcknowledge,preflightOriginAllowed,extractHandoffToken } from "./handoff-core.mjs";
+import { newCapability,handoffKey,createHandoffRecord,handoffState,validCapability,allowedOrigin,canAcknowledge,preflightOriginAllowed,extractHandoffToken,validateAckRequest } from "./handoff-core.mjs";
 
 const ALLOWED=new Set([ROUTES.SCHOOL_HOMEWORK,ROUTES.SCHOOL_READINESS]);
 function storeForEnvironment(){return Netlify.context?.deploy?.context==="production"?getStore("familyroy-intake",{consistency:"strong"}):getDeployStore({name:"familyroy-intake",consistency:"strong"});}
@@ -35,6 +35,12 @@ export default async(req:Request)=>{
  if(state==="missing")return Response.json({ok:false,error:"not_found"},{status:404,headers:{"cache-control":"no-store"}});
  const headers=cors(record.route,req);
  if(!headers["access-control-allow-origin"]&&req.headers.get("origin"))return Response.json({ok:false,error:"origin_not_allowed"},{status:403,headers});
+ let acknowledgeBody:any=null;
+ if(req.method==="POST"){
+   try{acknowledgeBody=await req.json();}catch{return Response.json({ok:false,error:"invalid_json"},{status:400,headers});}
+   const inputGate=validateAckRequest(record,acknowledgeBody);
+   if(!inputGate.ok)return Response.json({ok:false,error:inputGate.error},{status:inputGate.error==="source_mismatch"?409:422,headers});
+ }
  if(state==="expired")return Response.json({ok:false,error:"expired"},{status:410,headers});
  if(state==="acknowledged")return Response.json({ok:true,duplicate:true,status:"acknowledged",route:record.route,source_id:record.source_id,recovery:"already_delivered"},{headers});
  const outbox:any=await loadOutbox(store,record.route,record.source_id);
@@ -45,9 +51,7 @@ export default async(req:Request)=>{
    return Response.json({ok:true,status:"redeemed",route:record.route,source_id:record.source_id,payload:outbox.payload,expires_at:record.expires_at,recovery:"ack_after_durable_ingest"},{headers});
  }
  if(req.method==="POST"){
-   let body:any={};try{body=await req.json();}catch{}
-   if(body?.acknowledge!==true)return Response.json({ok:false,error:"acknowledgement_required"},{status:422,headers});
-   const gate=canAcknowledge(record,body?.source_id);if(!gate.ok)return Response.json({ok:false,error:gate.error},{status:gate.error==="expired"?410:409,headers});
+   const gate=canAcknowledge(record,acknowledgeBody?.source_id);if(!gate.ok)return Response.json({ok:false,error:gate.error},{status:gate.error==="expired"?410:409,headers});
    outbox.status="consumed";outbox.consumed_at=new Date().toISOString();outbox.consumer=String(body?.consumer||record.route);await store.setJSON(`outbox/${routeKey(record.route)}/${record.source_id}.json`,outbox);
    record.status="acknowledged";record.acknowledged_at=outbox.consumed_at;record.consumer=outbox.consumer;await store.setJSON(key,record);
    return Response.json({ok:true,duplicate:false,status:"acknowledged",route:record.route,source_id:record.source_id},{headers});
