@@ -33,3 +33,24 @@ test("universal payload detects WhatsApp ZIP by bytes even without zip filename 
  const p=prepareEvidence({source_type:"whatsapp_share",payload:{name:"shared-item",data_base64:b64(zip)}});
  assert.equal(p.source_type,"whatsapp_export"); assert.match(p.text,/Wear Bokke shirt/); assert.equal(p.attachments[0].chat_file,"_chat.txt");
 });
+
+test("image without OCR is preserved for review and unrelated caption cannot route",()=>{
+ const png=Buffer.concat([Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]),Buffer.from("test")]);
+ const p=prepareEvidence({text:"100 Acre Wood Imogen electricity meter dog repair",payload:{name:"shared.png",data_base64:b64(png)}});
+ assert.equal(p.image_ocr_required,true);
+ assert.equal(p.ocr_text_present,false);
+ assert.equal(p.text,"");
+});
+test("image OCR Base64 is decoded and retained for classification",()=>{
+ const png=Buffer.concat([Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]),Buffer.from("test")]);
+ const ocr="Pinelands North Primary School Grade 2. Homework: read pages 12-13. Bring sports kit on Thursday.";
+ const p=prepareEvidence({text:"100 Acre Wood Imogen electricity meter dog repair",ocr_text_base64:b64(ocr),payload:{name:"notice.png",data_base64:b64(png)}});
+ assert.equal(p.image_ocr_required,false);
+ assert.equal(p.ocr_text_present,true);
+ assert.equal(p.text,ocr);
+ assert.equal(p.attachments[0].mime_type,"image/png");
+});
+test("malformed OCR text is rejected",()=>{
+ const png=Buffer.concat([Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]),Buffer.from("test")]);
+ assert.throws(()=>prepareEvidence({ocr_text_base64:"%%%not-base64",payload:{name:"notice.png",data_base64:b64(png)}}),/invalid_ocr_text/);
+});
