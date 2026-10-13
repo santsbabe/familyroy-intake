@@ -61,6 +61,7 @@ export function prepareEvidence(body={}){
   const hasImage=prepared.some(x=>x.kind==="image");
   const ocrText=hasImage?decodeOcrText(body.ocr_text_base64):"";
   const imageOcrRequired=hasImage&&!ocrText;
-  const text=[String(body.text??"").trim(),extracted,ocrText].filter(Boolean).join("\n\n");
+  // For images, only recognised image text is allowed to drive routing; share captions may be unrelated.
+  const text=(hasImage?[extracted,ocrText]:[String(body.text??"").trim(),extracted]).filter(Boolean).join("\n\n");
   return{...body,source_type:prepared.some(x=>x.kind==="whatsapp_export")?"whatsapp_export":(body.source_type||"whatsapp_share"),text,attachments:prepared.map(x=>x.meta),image_ocr_required:imageOcrRequired,ocr_text_present:!!ocrText,_evidence:prepared};
 }
