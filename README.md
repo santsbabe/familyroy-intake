@@ -59,3 +59,23 @@ Queued means queued, not delivered: Calendar and other destinations remain expli
 
 ### Real-device acceptance
 On 6 October 2026 the existing **Send to FamilyRoy** iPhone Share Sheet shortcut passed the mixed PNPS acceptance case (`Alexander homework is revise klanke. Bring library bag on Friday.`): Intake returned Homework Quest + School Readiness ready / Calendar queued, the top-level `launch_url` was present, iOS handed the URL to the user's default browser (Chrome) after the user granted the Shortcut permission, and the public Control Centre QA page redeemed, ingested and rendered the School Readiness item. Browser choice is therefore not part of the server contract; the Shortcut uses iOS `Open URLs` and the user's browser association/permission.
+
+## Image recognition gate (staged, not yet released)
+
+An image-only share is accepted as evidence but goes to `review_queue` with `ocr_status: "required"`. The server must not infer a school, child, or actionable route from an image it has not read.
+
+The iOS Share Sheet TEST shortcut may supply an additional top-level JSON field `ocr_text_base64`, containing UTF-8 text recognised from the **same Shortcut Input image** by Apple's `Extract Text from Image` action and encoded using `Base64 Encode` (line breaks off). The existing `payload.data_base64` still contains the original image, unchanged.
+
+Example shape (placeholders, not real image bytes):
+
+```json
+{
+  "source_type": "whatsapp_share",
+  "payload": {"name": "shared-image.jpg", "data_base64": "IMAGE_BASE64"},
+  "ocr_text_base64": "RECOGNISED_TEXT_BASE64"
+}
+```
+
+The intake decodes OCR text, routes from recognised image text only, and returns `ocr_status: "provided"`. An unrelated Share Sheet caption is not used for image routing. This is device OCR, not server OCR; the Netlify function does not claim to read pixels.
+
+**Release gate:** The change is staged on `fix/image-ocr-review-guard`. Run the regression tests and function compilation check before an explicitly approved preview deployment. Do not merge to `main` or deploy production without separate approval.
