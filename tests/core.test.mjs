@@ -44,3 +44,23 @@ test("required consent form remains readiness without learning leakage",()=>{con
 test("domain routes keep deterministic source id projections",()=>{const samples=[{text:"Checkers special price",route:ROUTES.SHOPPING},{text:"Vet appointment for dog",route:ROUTES.PETS},{text:"Electricity meter reading 12345 kWh",route:ROUTES.ELECTRICITY},{text:"Passport appointment at Home Affairs",route:ROUTES.ADMIN}];for(const s of samples){const r=buildRecord({source_type:"manual",text:s.text});assert.ok(r.routes.includes(s.route),s.route);assert.equal(r.route_payloads[s.route].source_id,r.source_id);assert.equal(r.route_payloads[s.route].mode,"domain_intake");}});
 
 test("mixed school share projects identical source id to every destination",()=>{const r=buildRecord({source_chat:"PNPS",text:"PNPS: Alexander homework is revise klanke. Bring library bag on Friday."});for(const route of [ROUTES.SCHOOL_HOMEWORK,ROUTES.SCHOOL_READINESS,ROUTES.EVENTS])assert.equal(r.route_payloads[route].source_id,r.source_id);assert.equal(r.route_payloads[ROUTES.SCHOOL_HOMEWORK].fidelity,"preserve_source");assert.equal(r.route_payloads[ROUTES.SCHOOL_READINESS].dedupe_key,r.source_id);});
+
+test("image-only evidence cannot invent a school or route to unrelated destinations",()=>{
+ const r=buildRecord({source_type:"whatsapp_share",text:"100 Acre Wood Imogen electricity dog repair",attachments:[{name:"notice.png",mime_type:"image/png",sha256:"a"}],image_ocr_required:true});
+ assert.equal(r.status,"needs_review");
+ assert.deepEqual(r.routes,[ROUTES.REVIEW]);
+ assert.equal(r.extracted.school,null);
+ assert.deepEqual(r.extracted.children,[]);
+ assert.equal(r.ocr_status,"required");
+});
+test("recognised PNPS image text routes only to appropriate school destinations",()=>{
+ const r=buildRecord({source_type:"whatsapp_share",text:"Pinelands North Primary School Grade 2 Weekly Plan. Homework: read pages 12-13. Bring sports kit on Thursday. Return library books on Friday.",attachments:[{name:"notice.png",mime_type:"image/png",sha256:"b"}],ocr_text_present:true,image_ocr_required:false});
+ assert.equal(r.status,"routed");
+ assert.equal(r.extracted.school,"PNPS");
+ assert.deepEqual(r.extracted.children,[]);
+ assert.equal(r.ocr_status,"provided");
+ assert.ok(r.routes.includes(ROUTES.SCHOOL_HOMEWORK));
+ assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));
+ assert.ok(r.routes.includes(ROUTES.EVENTS));
+ for(const route of [ROUTES.PETS,ROUTES.ELECTRICITY,ROUTES.REPAIRS,ROUTES.SHOPPING,ROUTES.CONTACTS])assert.ok(!r.routes.includes(route),route);
+});
