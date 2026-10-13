@@ -43,11 +43,24 @@ export function inspectAttachment(decoded){
   if(text)return{meta:{...meta,mime_type:"text/plain"},text,kind:"text"};
   return{meta,text:"",kind:"file"};
 }
+const decodeOcrText=value=>{
+  const raw=String(value??"").replace(/\s/g,"");
+  if(!raw)return "";
+  if(raw.length>90000||!/^[A-Za-z0-9+/]*={0,2}$/.test(raw)||raw.length%4===1)throw new Error("invalid_ocr_text");
+  const bytes=Buffer.from(raw,"base64");
+  if(bytes.length>65536)throw new Error("invalid_ocr_text");
+  const text=bytes.toString("utf8");
+  if(text.includes("\uFFFD"))throw new Error("invalid_ocr_text");
+  return text.trim();
+};
 export function prepareEvidence(body={}){
   const payload=body.payload&&typeof body.payload==="object"?[body.payload]:[];
   const input=[...(Array.isArray(body.attachments)?body.attachments:[]),...payload];
   const prepared=input.map(a=>inspectAttachment(decodeAttachment(a)));
   const extracted=prepared.map(x=>x.text).filter(Boolean).join("\n\n");
-  const text=[String(body.text??"").trim(),extracted].filter(Boolean).join("\n\n");
-  return{...body,source_type:prepared.some(x=>x.kind==="whatsapp_export")?"whatsapp_export":(body.source_type||"whatsapp_share"),text,attachments:prepared.map(x=>x.meta),_evidence:prepared};
+  const hasImage=prepared.some(x=>x.kind==="image");
+  const ocrText=hasImage?decodeOcrText(body.ocr_text_base64):"";
+  const imageOcrRequired=hasImage&&!ocrText;
+  const text=[String(body.text??"").trim(),extracted,ocrText].filter(Boolean).join("\n\n");
+  return{...body,source_type:prepared.some(x=>x.kind==="whatsapp_export")?"whatsapp_export":(body.source_type||"whatsapp_share"),text,attachments:prepared.map(x=>x.meta),image_ocr_required:imageOcrRequired,ocr_text_present:!!ocrText,_evidence:prepared};
 }
