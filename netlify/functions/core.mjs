@@ -14,7 +14,7 @@ const learningTask=/\b(homework|huiswerk|spelling|reading|lees|maths|wiskunde|wo
 const concreteDate=/\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|deadline|due|rsvp|save the date|\d{1,2}[:.]\d{2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec))\b/i;
 function inferSchool(t,chat=""){
  const s=(t+" "+chat).toLowerCase().replace(/[\r\n\t]+/g," ").replace(/[.,:;\/-]+/g," ").replace(/\s+/g," ");
- if(/\bpnps\b|\bpinelands\s+north\s+primary(?:\s+school)?\b/.test(s))return"PNPS";
+ if(/\bpnps\b|\bpinelands\s+north\s+primary(?:\s+school)?\b|\bpinelands\s+north\b.{0,80}\bprimary\s+school\b/.test(s))return"PNPS";
  if(/\bred\s+roots\b/.test(s))return"Red Roots";
  if(/\b(?:100\s*acre\s*wood|haw)\b/.test(s))return"100 Acre Wood";
  return null;
