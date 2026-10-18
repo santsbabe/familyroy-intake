@@ -1,7 +1,7 @@
 name: FamilyRoy image intake unit tests
 on:
   push:
-    branches: ["fix/image-ocr-review-guard"]
+    branches: ["fix/image-ocr-review-guard", "fix/ocr-school-and-domain-boundaries"]
   workflow_dispatch:
 jobs:
   test:
