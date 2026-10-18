@@ -88,3 +88,24 @@ test("explicit pet care still triggers pet route",()=>{
  const r=buildRecord({text:"Dog vaccination at the vet on Friday."});
  assert.ok(r.routes.includes(ROUTES.PETS));
 });
+
+test("unattributed school image OCR routes only to review and never invents child",()=>{
+ const r=buildRecord({source_type:"whatsapp_share",text:"Grade 2 weekly plan. Homework: maths worksheet. Library books returned Friday.",attachments:[{name:"notice.png",mime_type:"image/png",size:500,sha256:"unattributed"}],ocr_text_present:true});
+ assert.deepEqual(r.routes,[ROUTES.REVIEW]);
+ assert.equal(r.status,"needs_review");
+ assert.equal(r.extracted.school,null);
+ assert.deepEqual(r.extracted.children,[]);
+ assert.equal(r.ocr_status,"provided");
+});
+test("non-school pet photo with OCR still routes to pet care",()=>{
+ const r=buildRecord({source_type:"whatsapp_share",text:"Dog vaccination appointment with the vet.",attachments:[{name:"vet.jpg",mime_type:"image/jpeg",size:400,sha256:"petphoto"}],ocr_text_present:true});
+ assert.ok(r.routes.includes(ROUTES.PETS));
+ assert.ok(!r.routes.includes(ROUTES.REVIEW));
+});
+test("attributed school OCR photo retains only school routes and unknown child",()=>{
+ const r=buildRecord({text:"Pinelands North Primary School Grade 2 Weekly Plan. Homework: practise multiplication tables. Return library books Friday.",attachments:[{name:"weekly.png",mime_type:"image/png",size:400,sha256:"attributed"}],ocr_text_present:true});
+ assert.equal(r.extracted.school,"PNPS");
+ assert.deepEqual(r.extracted.children,[]);
+ assert.equal(r.status,"routed");
+ assert.ok(!r.routes.includes(ROUTES.PETS));
+});
