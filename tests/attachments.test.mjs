@@ -5,7 +5,7 @@ import { prepareEvidence, MAX_ATTACHMENT_BYTES } from "../netlify/functions/atta
 
 const b64=b=>Buffer.from(b).toString("base64");
 test("image evidence is hashed and stripped of inline bytes",()=>{
- const p=prepareEvidence({attachments:[{name:"notice.jpg",mime_type:"image/jpeg",data_base64:b64(Buffer.from("fake-image"))}]});
+ const p=prepareEvidence({attachments:[{name:"notice.png",mime_type:"image/png",data_base64:b64(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0x00,0x00]))}]});
  assert.equal(p.attachments.length,1); assert.equal(p.attachments[0].size,10); assert.ok(p.attachments[0].sha256); assert.equal("data_base64" in p.attachments[0],false); assert.equal(p._evidence[0].kind,"image");
 });
 test("WhatsApp export ZIP extracts chat text and marks source type",()=>{
