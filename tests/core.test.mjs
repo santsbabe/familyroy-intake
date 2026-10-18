@@ -64,3 +64,27 @@ test("recognised PNPS image text routes only to appropriate school destinations"
  assert.ok(r.routes.includes(ROUTES.EVENTS));
  for(const route of [ROUTES.PETS,ROUTES.ELECTRICITY,ROUTES.REPAIRS,ROUTES.SHOPPING,ROUTES.CONTACTS])assert.ok(!r.routes.includes(route),route);
 });
+
+test("OCR line breaks in school heading still identify PNPS",()=>{
+ const r=buildRecord({source_type:"whatsapp_share",ocr_text_present:true,text:"Pinelands North\nPrimary School\nGrade 2 Weekly Plan\nHomework: practise multiplication tables 2 5 and 10. Bring sports kit on Thursday. Return library books on Friday."});
+ assert.equal(r.extracted.school,"PNPS");assert.deepEqual(r.extracted.children,[]);
+ assert.ok(r.routes.includes(ROUTES.SCHOOL_HOMEWORK));
+ assert.ok(r.routes.includes(ROUTES.SCHOOL_READINESS));
+ assert.ok(r.routes.includes(ROUTES.EVENTS));
+ assert.ok(!r.routes.includes(ROUTES.PETS));
+});
+test("OCR interleaved Grade 2 and Primary School still identifies PNPS",()=>{
+ const r=buildRecord({ocr_text_present:true,text:"Pinelands North\nGrade 2\nPrimary School\nWeekly Plan. Homework: learn spelling."});
+ assert.equal(r.extracted.school,"PNPS");
+ assert.ok(r.routes.includes(ROUTES.SCHOOL_HOMEWORK));
+});
+test("school multiplication and education never trigger pet care",()=>{
+ for(const text of ["School maths homework: Learn multiplication tables.", "School education worksheet: Learn number bonds.","School: complete an application form by Friday."]){
+  const r=buildRecord({text,ocr_text_present:true});
+  assert.ok(!r.routes.includes(ROUTES.PETS),text);
+ }
+});
+test("explicit pet care still triggers pet route",()=>{
+ const r=buildRecord({text:"Dog vaccination at the vet on Friday."});
+ assert.ok(r.routes.includes(ROUTES.PETS));
+});
